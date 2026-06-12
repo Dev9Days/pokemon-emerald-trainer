@@ -1,0 +1,70 @@
+@using PokemonGen3Hack.Services
+
+<div class="toast toast-@Type.ToString().ToLower() @GetVisibilityClass()"
+     role="alert"
+     aria-live="assertive">
+  <div class="toast-icon">
+    @if (Type == ToastType.Success) {
+      <span>✓</span>
+    } else if (Type == ToastType.Loading) {
+      <span class="icon-loading">⟳</span>
+    } else if (Type == ToastType.Error) {
+      <span>!</span>
+    } else if (Type == ToastType.Info) {
+      <span>ℹ</span>
+    }
+  </div>
+  <div class="toast-content">
+    <p class="toast-message">@Message</p>
+  </div>
+  <button class="toast-close" @onclick="HandleDismiss" aria-label="닫기">&times;</button>
+</div>
+
+@code {
+  [Parameter]
+  public bool IsVisible { get; set; }
+
+  [Parameter]
+  public string Message { get; set; } = string.Empty;
+
+  [Parameter]
+  public ToastType Type { get; set; } = ToastType.Success;
+
+  [Parameter]
+  public bool ShouldDismiss { get; set; }
+
+  [Parameter]
+  public EventCallback OnDismiss { get; set; }
+
+  private bool isExiting = false;
+  private bool hasAppeared = false;
+
+  protected override async Task OnAfterRenderAsync(bool firstRender) {
+    if (firstRender && !hasAppeared) {
+      hasAppeared = true;
+      await Task.Delay(10); // Small delay to trigger CSS animation
+      StateHasChanged();
+    }
+  }
+
+  protected override async Task OnParametersSetAsync() {
+    if (ShouldDismiss && !isExiting) {
+      await HandleDismiss();
+    }
+  }
+
+  private string GetVisibilityClass() {
+    if (isExiting) return "exiting";
+    if (hasAppeared && IsVisible) return "visible";
+    return "";
+  }
+
+  private async Task HandleDismiss() {
+    if (isExiting) return; // Prevent double dismissal
+
+    isExiting = true;
+    StateHasChanged();
+    await Task.Delay(250); // Match --transition-base duration
+    await OnDismiss.InvokeAsync();
+  }
+}

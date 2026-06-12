@@ -1,0 +1,76 @@
+@using PokemonGen3Hack.Services
+@inject ToastService ToastService
+@implements IDisposable
+
+<div class="toast-container">
+  @foreach (var toast in ToastService.Toasts) {
+    <ToastNotification @key="toast.Id"
+                      IsVisible="true"
+                      Message="@toast.Message"
+                      Type="@toast.Type"
+                      ShouldDismiss="@toastsToDismiss.Contains(toast.Id)"
+                      OnDismiss="@(() => HandleDismiss(toast.Id))" />
+  }
+  @if (ToastService.PendingCount > 0) {
+    <div class="toast-pending-count">
+      +@ToastService.PendingCount more
+    </div>
+  }
+</div>
+
+@code {
+  private Dictionary<string, System.Timers.Timer> timers = new();
+  private HashSet<string> toastsToDismiss = new();
+
+  protected override void OnInitialized() {
+    ToastService.OnChange += OnToastServiceChanged;
+  }
+
+  private void OnToastServiceChanged() {
+    // Cancel timers for removed toasts
+    var currentToastIds = ToastService.Toasts.Select(t => t.Id).ToHashSet();
+    var timersToRemove = timers.Keys.Where(id => !currentToastIds.Contains(id)).ToList();
+
+    foreach (var id in timersToRemove) {
+      timers[id].Stop();
+      timers[id].Dispose();
+      timers.Remove(id);
+      toastsToDismiss.Remove(id);
+    }
+
+    // Create timers for new toasts
+    foreach (var toast in ToastService.Toasts) {
+      if (!timers.ContainsKey(toast.Id) && toast.DurationMs > 0) {
+        var timer = new System.Timers.Timer(toast.DurationMs);
+        timer.AutoReset = false;
+        timer.Elapsed += (sender, e) => {
+          var toastId = toast.Id;
+          InvokeAsync(() => {
+            toastsToDismiss.Add(toastId);
+            StateHasChanged();
+          });
+        };
+        timer.Start();
+        timers[toast.Id] = timer;
+      }
+    }
+
+    StateHasChanged();
+  }
+
+  private void HandleDismiss(string id) {
+    toastsToDismiss.Remove(id);
+    ToastService.Dismiss(id);
+  }
+
+  public void Dispose() {
+    ToastService.OnChange -= OnToastServiceChanged;
+
+    foreach (var timer in timers.Values) {
+      timer.Stop();
+      timer.Dispose();
+    }
+    timers.Clear();
+    toastsToDismiss.Clear();
+  }
+}

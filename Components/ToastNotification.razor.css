@@ -1,0 +1,228 @@
+/* ============================================
+   Toast Base Styles
+   ============================================ */
+.toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  max-width: 360px;
+  min-width: 280px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+  .toast.visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: all;
+    animation: toastFadeIn var(--transition-base) ease-out;
+  }
+
+  .toast.exiting {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all var(--transition-base);
+  }
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================
+   Toast Type Variants
+   ============================================ */
+.toast-success {
+  border-left-color: var(--sage-600);
+}
+
+.toast-loading {
+  border-left-color: var(--sage-400);
+}
+
+.toast-error {
+  border-left-color: var(--terracotta);
+}
+
+.toast-info {
+  border-left-color: var(--sage-500);
+}
+
+/* ============================================
+   Toast Icon
+   ============================================ */
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 50%;
+}
+
+.toast-success .toast-icon {
+  color: var(--sage-600);
+  background: var(--sage-100);
+}
+
+.toast-loading .toast-icon {
+  color: var(--sage-400);
+  background: var(--sage-50);
+}
+
+.toast-error .toast-icon {
+  color: var(--terracotta);
+  background: color-mix(in srgb, var(--terracotta), transparent 85%);
+}
+
+.toast-info .toast-icon {
+  color: var(--sage-500);
+  background: var(--sage-100);
+}
+
+/* Loading Icon Animation */
+.icon-loading {
+  display: inline-block;
+  animation: iconSpin 1500ms linear infinite;
+}
+
+@keyframes iconSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   Toast Content
+   ============================================ */
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-message {
+  margin: 0;
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+/* ============================================
+   Toast Close Button
+   ============================================ */
+.toast-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+  .toast-close:hover {
+    background: var(--sage-200);
+    color: var(--text-primary);
+    transform: scale(1.1);
+  }
+
+  .toast-close:active {
+    transform: scale(0.95);
+  }
+
+/* ============================================
+   Dark Mode Support
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  .toast {
+    background: var(--surface-elevated);
+    box-shadow: var(--shadow-xl), 0 0 0 1px var(--border);
+  }
+
+  .toast-success .toast-icon {
+    background: rgba(122, 143, 98, 0.2);
+  }
+
+  .toast-loading .toast-icon {
+    background: rgba(122, 143, 98, 0.15);
+  }
+
+  .toast-error .toast-icon {
+    background: rgba(192, 120, 86, 0.2);
+  }
+
+  .toast-info .toast-icon {
+    background: rgba(122, 143, 98, 0.2);
+  }
+
+  .toast-close:hover {
+    background: rgba(122, 143, 98, 0.2);
+  }
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 768px) {
+  .toast {
+    max-width: none;
+    min-width: auto;
+    width: 100%;
+  }
+
+  .toast-message {
+    font-size: 0.8125rem;
+  }
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: opacity var(--transition-base);
+    transform: none;
+  }
+
+    .toast.visible {
+      animation: none;
+    }
+
+  .icon-loading {
+    animation: iconSpin 3000ms linear infinite;
+  }
+}

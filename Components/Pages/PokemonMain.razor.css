@@ -1,0 +1,918 @@
+/* ============================================
+   Main Container
+   ============================================ */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-3);
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+.container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.container::-webkit-scrollbar-thumb {
+  background: var(--sage-300);
+  border-radius: var(--radius-lg);
+}
+
+.container::-webkit-scrollbar-thumb:hover {
+  background: var(--sage-400);
+}
+
+/* ============================================
+   Pokemon Party Header
+   ============================================ */
+.party-header {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.party-slot {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--surface-elevated);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.party-slot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--sage-500), var(--sage-600));
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.party-slot:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.party-slot:hover::before {
+  opacity: 0.1;
+}
+
+.party-slot.active {
+  border-color: var(--primary);
+  border-width: 3px;
+  box-shadow: 0 0 0 3px rgba(95, 114, 76, 0.2);
+}
+
+.party-slot.active::before {
+  opacity: 0.05;
+}
+
+.party-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  position: relative;
+  z-index: 1;
+}
+
+.party-slot .placeholder {
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   Card Component
+   ============================================ */
+.card {
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sage-500) 0%, var(--sage-300) 100%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+/* Card Animation */
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: cardSlideUp var(--transition-slow) ease-out backwards;
+}
+
+.card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.card:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.card:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.card:nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.card:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.card:nth-child(6) {
+  animation-delay: 200ms;
+}
+
+.card:nth-child(7) {
+  animation-delay: 240ms;
+}
+
+.card:nth-child(8) {
+  animation-delay: 280ms;
+}
+
+/* ============================================
+   Form Layout
+   ============================================ */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-row > label {
+  flex: 0 0 80px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+  margin-bottom: 0;
+}
+
+.form-row > input,
+.form-row > select {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.form-row > input[type="checkbox"] {
+  flex: 0 0 auto;
+}
+
+/* ============================================
+   Input Fields
+   ============================================ */
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  max-width: 270px;
+  padding: var(--space-1) var(--space-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all var(--transition-base);
+}
+
+input[type="text"]:hover,
+input[type="number"]:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-elevated);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: var(--primary);
+  background: var(--surface-elevated);
+}
+
+/* Number Input - Remove Arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ============================================
+   Select Dropdown
+   ============================================ */
+select {
+  width: 100%;
+  max-width: 270px;
+  padding: var(--space-1) var(--space-2);
+  padding-right: var(--space-6);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  transition: all var(--transition-base);
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%237a8f62' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
+  background-size: 12px;
+}
+
+select:hover {
+  border-color: var(--border-hover);
+  background-color: var(--surface-elevated);
+}
+
+select:focus {
+  border-color: var(--primary);
+  background-color: var(--surface-elevated);
+}
+
+/* Ribbons Checkbox Group */
+.ribbons-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.ribbon-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  user-select: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ribbon-checkbox:hover {
+  border-color: var(--primary);
+  background: var(--surface-elevated);
+}
+
+.ribbon-checkbox input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.ribbon-checkbox input[type="checkbox"]:checked + span {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.ribbon-checkbox:has(input[type="checkbox"]:checked) {
+  border-color: var(--primary);
+  background: linear-gradient( 135deg, rgba(122, 143, 98, 0.1), rgba(122, 143, 98, 0.05) );
+}
+
+/* ============================================
+   Checkbox
+   ============================================ */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+input[type="checkbox"]:hover {
+  transform: scale(1.1);
+}
+
+input[type="checkbox"].hidden {
+  display: none;
+}
+
+label:has(input[type="checkbox"].hidden) {
+  /* flex-basis: auto; */
+  padding: 0 4px;
+  color: var(--sage-200);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+label:has(input[type="checkbox"].hidden):hover {
+  color: var(--sage-300);
+}
+
+label:has(input[type="checkbox"].hidden).shiny {
+  color: color-mix(in srgb, deeppink, transparent 80%);
+}
+
+label:has(input[type="checkbox"].hidden).shiny:hover {
+  color: color-mix(in srgb, deeppink, transparent 50%);
+}
+
+label:has(input[type="checkbox"].hidden).check {
+  color: var(--sage-600);
+}
+
+label:has(input[type="checkbox"].hidden).check.shiny {
+  color: deeppink;
+}
+
+/* ============================================
+   Value Display
+   ============================================ */
+.value-display {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background: linear-gradient(135deg, var(--sage-100), var(--sage-50));
+  color: var(--primary-dark);
+  font-family: "Fira Code", monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--sage-200);
+}
+
+/* ============================================
+   Info Text
+   ============================================ */
+.info-text {
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ============================================
+   Stats Table
+   ============================================ */
+.stats-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  border: 1.5px solid var(--border);
+}
+
+.stats-table thead {
+  background: linear-gradient(135deg, var(--sage-500), var(--sage-600));
+}
+
+.stats-table thead th {
+  padding: var(--space-2) var(--space-1);
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: white;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stats-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition-fast);
+}
+
+.stats-table tbody tr:hover {
+  background: var(--sage-50);
+}
+
+.stats-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.stats-table tbody td {
+  padding: var(--space-2) var(--space-1);
+  text-align: center;
+  color: var(--text-primary);
+  font-family: "Fira Code", monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.stats-table tbody td:first-child {
+  text-align: left;
+  font-family: "DM Sans", sans-serif;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+}
+
+.stats-table tbody td input[type="number"] {
+  width: 100%;
+  max-width: 55px;
+  padding: var(--space-1);
+  text-align: center;
+  font-size: 0.75rem;
+  border-width: 1px;
+}
+
+/* Sum Row */
+.sum-row {
+  background: linear-gradient( 135deg, var(--sage-100), var(--sage-50) ) !important;
+  border-top: 2px solid var(--primary) !important;
+  font-weight: 700;
+}
+
+.sum-row td {
+  color: var(--primary-dark);
+  font-size: 0.875rem;
+  padding: var(--space-3) var(--space-1);
+}
+
+/* ============================================
+   Info Card
+   ============================================ */
+.info-card {
+  background: linear-gradient(135deg, var(--sage-100) 0%, var(--sage-50) 100%);
+  border-left: 3px solid var(--primary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-weight: 500;
+  padding: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   Button Group
+   ============================================ */
+.button-group {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+  margin-top: 0;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-5);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  z-index: -1;
+}
+
+.btn:hover::before {
+  opacity: 1;
+}
+
+.btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Button Variants */
+.btn-primary {
+  background: linear-gradient(135deg, var(--sage-600), var(--sage-700));
+  color: white;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--sage-400), var(--sage-500));
+  color: white;
+}
+
+.btn-accent {
+  background: var(--surface-elevated);
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-accent:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Disabled State */
+.btn:disabled,
+input:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+/* ============================================
+   Layout Grid
+   ============================================ */
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ============================================
+   Responsive Design - Large Desktop
+   ============================================ */
+@media (min-width: 1600px) {
+  .container {
+    max-width: 1600px;
+  }
+
+  .layout-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================
+   Responsive Design - Tablet
+   ============================================ */
+@media (max-width: 1024px) {
+  .container {
+    padding: var(--space-2);
+  }
+
+  .card {
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .form-row > label {
+    flex: 0 0 70px;
+    font-size: 0.625rem;
+  }
+
+  .form-row > input,
+  .form-row > select {
+    flex: 1 1 140px;
+  }
+
+  .party-header {
+    gap: var(--space-1);
+  }
+}
+
+/* ============================================
+   Responsive Design - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+  .container {
+    padding: var(--space-2);
+  }
+
+  .card {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-3);
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .form-row > label {
+    flex: unset;
+    font-size: 0.6875rem;
+  }
+
+  .form-row > input,
+  .form-row > select {
+    flex: unset;
+    font-size: 0.8125rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .btn {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .stats-table thead th,
+  .stats-table tbody td {
+    padding: var(--space-2) var(--space-1);
+    font-size: 0.6875rem;
+  }
+
+  .stats-table tbody td input[type="number"] {
+    max-width: 50px;
+    padding: var(--space-1);
+    font-size: 0.6875rem;
+  }
+
+  .party-header {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+}
+
+/* ============================================
+   Responsive Design - Small Mobile
+   ============================================ */
+@media (max-width: 480px) {
+  .container {
+    padding: var(--space-2);
+  }
+
+  .card {
+    padding: var(--space-3);
+  }
+
+  .stats-table {
+    font-size: 0.625rem;
+  }
+
+  .stats-table thead th,
+  .stats-table tbody td {
+    padding: var(--space-1);
+    font-size: 0.625rem;
+  }
+
+  .stats-table tbody td input[type="number"] {
+    max-width: 45px;
+    padding: var(--space-1);
+    font-size: 0.625rem;
+  }
+}
+
+/* ============================================
+   Dark Mode
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  .card::before {
+    opacity: 0.3;
+  }
+
+  .stats-table {
+    border-color: var(--border);
+  }
+
+  .stats-table tbody tr:hover {
+    background: rgba(122, 143, 98, 0.1);
+  }
+
+  input[type="text"],
+  input[type="number"],
+  select {
+    background: var(--surface);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  input[type="text"]:hover,
+  input[type="number"]:hover,
+  select:hover {
+    background: var(--surface-elevated);
+  }
+
+  .value-display {
+    background: linear-gradient( 135deg, rgba(122, 143, 98, 0.2), rgba(122, 143, 98, 0.1) );
+    border-color: var(--border);
+    color: var(--sage-300);
+  }
+
+  .party-slot {
+    background: var(--surface);
+  }
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+@media print {
+  .container {
+    padding: 0;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: var(--space-3);
+  }
+
+  .button-group,
+  .party-header {
+    display: none;
+  }
+
+  .card::before {
+    display: none;
+  }
+}
+
+/* ============================================
+   Type Badge
+   ============================================ */
+.type-badge {
+  display: inline-block;
+  min-width: 57px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  cursor: default;
+}
+
+.type-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Pokemon Type Colors */
+.type-normal {
+  background: linear-gradient(135deg, #a8a878, #9c9c6f);
+}
+
+.type-fighting {
+  background: linear-gradient(135deg, #c03028, #a8282d);
+}
+
+.type-flying {
+  background: linear-gradient(135deg, #a890f0, #9180c4);
+}
+
+.type-poison {
+  background: linear-gradient(135deg, #a040a0, #803380);
+}
+
+.type-ground {
+  background: linear-gradient(135deg, #e0c068, #d4a455);
+}
+
+.type-rock {
+  background: linear-gradient(135deg, #b8a038, #a1902a);
+}
+
+.type-bug {
+  background: linear-gradient(135deg, #a8b820, #8d9a1b);
+}
+
+.type-ghost {
+  background: linear-gradient(135deg, #705898, #5a4570);
+}
+
+.type-steel {
+  background: linear-gradient(135deg, #b8b8d0, #9797ba);
+}
+
+.type-fire {
+  background: linear-gradient(135deg, #f08030, #dd6610);
+}
+
+.type-water {
+  background: linear-gradient(135deg, #6890f0, #386ceb);
+}
+
+.type-grass {
+  background: linear-gradient(135deg, #78c850, #5ca935);
+}
+
+.type-electric {
+  background: linear-gradient(135deg, #f8d030, #f0c108);
+}
+
+.type-psychic {
+  background: linear-gradient(135deg, #f85888, #f61c5d);
+}
+
+.type-ice {
+  background: linear-gradient(135deg, #98d8d8, #69c6c6);
+}
+
+.type-dragon {
+  background: linear-gradient(135deg, #7038f8, #4c08ef);
+}
+
+.type-dark {
+  background: linear-gradient(135deg, #705848, #513f34);
+}
+
+/* ============================================
+   Plain Text
+   ============================================ */
+.plain-text {
+  color: var(--text-secondary);
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+}

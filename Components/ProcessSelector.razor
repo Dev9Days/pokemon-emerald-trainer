@@ -1,0 +1,107 @@
+@using System.Diagnostics
+@using System.ComponentModel
+
+<div class="modal-overlay @(IsVisible ? "visible" : "")" @onclick="Close">
+  <div class="modal-content" @onclick:stopPropagation="true">
+    <div class="modal-header">
+      <h3>에뮬레이터 프로세스 선택</h3>
+      <button class="modal-close" @onclick="Close">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (processes == null || processes.Length == 0) {
+        <div class="empty-state">
+          <p>실행 중인 에뮬레이터가 없습니다.</p>
+          <p class="help-text">지원 에뮬레이터: VBA, VBA-M, mGBA, DeSmuME, melonDS, Citra</p>
+        </div>
+      } else {
+        <div class="process-list">
+          @foreach (var process in processes) {
+            <div class="process-item" @onclick="() => SelectProcess(process)">
+              <div class="process-icon">🎮</div>
+              <div class="process-info">
+                <div class="process-name">@process.ProcessName</div>
+                <div class="process-title">@process.MainWindowTitle</div>
+                <div class="process-id">PID: @process.Id.ToString("X").PadLeft(8, '0')</div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" @onclick="Refresh">새로고침</button>
+      <button class="btn btn-accent" @onclick="Close">취소</button>
+    </div>
+  </div>
+</div>
+
+@code {
+  [Parameter]
+  public bool IsVisible { get; set; }
+
+  [Parameter]
+  public EventCallback<bool> IsVisibleChanged { get; set; }
+
+  [Parameter]
+  public EventCallback<Process> OnProcessSelected { get; set; }
+
+  private Process[]? processes;
+
+  protected override void OnParametersSet() {
+    if (IsVisible && processes == null) {
+      LoadProcesses();
+    }
+  }
+
+  private void LoadProcesses() {
+    processes = GetEmulatorProcesses();
+  }
+
+  private void Refresh() {
+    LoadProcesses();
+    StateHasChanged();
+  }
+
+  private async Task SelectProcess(Process process) {
+    await OnProcessSelected.InvokeAsync(process);
+    await Close();
+  }
+
+  private async Task Close() {
+    IsVisible = false;
+    await IsVisibleChanged.InvokeAsync(false);
+  }
+
+  private static Process[] GetEmulatorProcesses() {
+    Process[] allProcesses = Process.GetProcesses();
+    string[] allowProcessNames = [
+      "visualboyadvance",
+      "visualboyadvance-m",
+      "vba-m",
+      "mgba",
+      "desmume",
+      "melonds",
+      "citra",
+    ];
+
+    Process[] filteredProcesses = allProcesses
+      .Where(p => {
+        try {
+          return p.MainWindowHandle != IntPtr.Zero
+            && !string.IsNullOrEmpty(p.MainWindowTitle)
+            && allowProcessNames.Contains(p.ProcessName.ToLower());
+        } catch (Win32Exception) {
+          return false;
+        } catch (InvalidOperationException) {
+          return false;
+        } catch (Exception) {
+          return false;
+        }
+      })
+      .ToArray();
+
+    return filteredProcesses;
+  }
+}

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PokemonGen3Hack.csproj" />
+  <Project Path="Launcher/PokemonGen3Hack.Launcher.csproj" />
+</Solution>

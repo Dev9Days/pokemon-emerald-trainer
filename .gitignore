@@ -1,0 +1,29 @@
+# Build output
+bin/
+obj/
+dist/
+
+# Visual Studio / Rider / user state
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+
+# Local AI/editor workspace config
+.agents/
+.claude/
+
+# Local scratch data
+Pokemon/output_hex.txt
