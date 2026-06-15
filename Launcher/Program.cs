@@ -138,6 +138,7 @@ internal static class UpdateChecker
             && File.Exists(Path.Combine(extractRoot, "PokemonGen3Hack.exe"))
             ? extractRoot
             : Directory.GetDirectories(extractRoot).FirstOrDefault() ?? extractRoot;
+        var backupRoot = Path.Combine(updateRoot, "backup");
         var scriptPath = Path.Combine(updateRoot, "apply-update.ps1");
         var launcherPath = Path.Combine(baseDirectory, "PokemonGen3Hack.exe");
 
@@ -146,8 +147,42 @@ param([int]$LauncherPid)
 $ErrorActionPreference = "Stop"
 Wait-Process -Id $LauncherPid -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 300
-Copy-Item -Path "{{packageRoot}}\*" -Destination "{{baseDirectory}}" -Recurse -Force
-Start-Process -FilePath "{{launcherPath}}" -WorkingDirectory "{{baseDirectory}}"
+$baseDirectory = "{{baseDirectory}}"
+$packageRoot = "{{packageRoot}}"
+$backupRoot = "{{backupRoot}}"
+$launcherPath = "{{launcherPath}}"
+
+function Copy-Package([string]$source, [string]$destination) {
+    Copy-Item -Path (Join-Path $source "*") -Destination $destination -Recurse -Force
+}
+
+try {
+    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+    Copy-Package $baseDirectory $backupRoot
+
+    Copy-Package $packageRoot $baseDirectory
+
+    if (!(Test-Path (Join-Path $baseDirectory "PokemonGen3Hack.exe"))) {
+        throw "Launcher executable is missing after update."
+    }
+    if (!(Test-Path (Join-Path $baseDirectory "version.txt"))) {
+        throw "version.txt is missing after update."
+    }
+    if (!(Test-Path (Join-Path $baseDirectory "app\PokemonGen3Hack.exe"))) {
+        throw "App executable is missing after update."
+    }
+} catch {
+    try {
+        if (Test-Path $backupRoot) {
+            Copy-Package $backupRoot $baseDirectory
+        }
+    } catch {
+    }
+    Add-Type -AssemblyName PresentationFramework
+    [System.Windows.MessageBox]::Show("업데이트에 실패해서 기존 버전으로 복구했습니다.`n`n$($_.Exception.Message)", "PokemonGen3Hack 업데이트") | Out-Null
+}
+
+Start-Process -FilePath $launcherPath -WorkingDirectory $baseDirectory
 """);
 
         return scriptPath;
