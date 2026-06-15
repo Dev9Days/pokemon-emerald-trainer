@@ -91,10 +91,13 @@ namespace PokemonGen3Hack.Pokemon {
       );
     }
     public void SetStatus(Status newStatus) => status = newStatus;
-    public void RegeneratePID(Nature nature, Gender gender, bool isShiny) {
-      personality.UpdatePersonality(nature, gender, isShiny);
+    public bool CanGenerateMethod1PID(Nature nature, Gender gender, bool isShiny, Dictionary<string, byte> targetIVs)
+      => personality.CanGenerateMethod1PID(nature, gender, isShiny, targetIVs);
+    public bool RegeneratePID(Nature nature, Gender gender, bool isShiny, Dictionary<string, byte> targetIVs, bool allowIllegalFallback) {
+      bool isLegal = personality.TryUpdatePersonality(nature, gender, isShiny, targetIVs, allowIllegalFallback);
       Data.UpdateKey(personality.PID, tid, sid);
       Data.ChangeSubOrder(personality.GetBytes());
+      return isLegal;
     }
   }
 }

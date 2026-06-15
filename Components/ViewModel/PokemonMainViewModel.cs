@@ -117,6 +117,24 @@ namespace PokemonGen3Hack.Components.ViewModel {
 
     private void UpdatePokemonLanguage(PokemonModel pokemon) {
       pokemon.SetLanguage(EmulLang);
+      EnsureDefaultStats(pokemon);
+      for (int i = 0; i < pokemon.Stats.Count && i < EmulLang.StatNames.Length; i++) {
+        pokemon.Stats[i].Name = EmulLang.StatNames[i];
+      }
+    }
+
+    private void EnsureDefaultStats(PokemonModel pokemon) {
+      while (pokemon.Stats.Count < Const.EN.StatNames.Length) {
+        int index = pokemon.Stats.Count;
+        pokemon.Stats.Add(new StatModel {
+          EN = Const.EN.StatNames[index],
+          Name = EmulLang.StatNames[index],
+          Base = 0,
+          IV = 0,
+          EV = 0,
+          RealStat = 0,
+        });
+      }
     }
 
     private Dictionary<string, byte> PokemonModelStatsToIVs(List<StatModel> stats) {
@@ -133,6 +151,41 @@ namespace PokemonGen3Hack.Components.ViewModel {
         evs[stat.EN] = (byte)stat.EV;
       }
       return evs;
+    }
+
+    private static bool SameStats(Dictionary<string, byte> left, Dictionary<string, byte> right) {
+      string[] keys = ["HP", "Attack", "Defense", "Speed", "SpecialAttack", "SpecialDefense"];
+      foreach (string key in keys) {
+        left.TryGetValue(key, out byte leftValue);
+        right.TryGetValue(key, out byte rightValue);
+        if (leftValue != rightValue) return false;
+      }
+      return true;
+    }
+
+    public bool NeedsNewPID() {
+      if (PokemonInfo.Length == 0 || SelectedPartyIndex < 0 || SelectedPartyIndex >= PokemonInfo.Length) {
+        return false;
+      }
+
+      var info = PokemonInfo[SelectedPartyIndex];
+      Dictionary<string, byte> ivs = PokemonModelStatsToIVs(Pokemon.Stats);
+      return
+        Pokemon.Nature != info.Personality.Nature ||
+        Pokemon.Gender != info.Personality.Gender ||
+        Pokemon.IsShiny != info.Personality.IsShiny ||
+        !SameStats(ivs, info.Data.IVs);
+    }
+
+    public bool IsPKHeXMethod1Compatible() {
+      if (PokemonInfo.Length == 0 || SelectedPartyIndex < 0 || SelectedPartyIndex >= PokemonInfo.Length) {
+        return true;
+      }
+
+      if (!NeedsNewPID()) return true;
+
+      var info = PokemonInfo[SelectedPartyIndex];
+      return info.CanGenerateMethod1PID(Pokemon.Nature, Pokemon.Gender, Pokemon.IsShiny, PokemonModelStatsToIVs(Pokemon.Stats));
     }
 
     private byte CalculatePokerusValue(bool isPokerus, int daysLeft) {
@@ -172,6 +225,7 @@ namespace PokemonGen3Hack.Components.ViewModel {
 
     public PokemonMainViewModel() {
       dex = new(emul);
+      UpdatePokemonLanguage(Pokemon);
     }
 
     // Methods
@@ -252,7 +306,7 @@ namespace PokemonGen3Hack.Components.ViewModel {
       return [.. errMsgs];
     }
 
-    public string[] ApplyChanges() {
+    public string[] ApplyChanges(bool allowIllegalPKHeX = false) {
       string[] errMsgs = Validate();
       if (errMsgs.Length > 0) return errMsgs;
       var info = PokemonInfo[SelectedPartyIndex];
@@ -262,13 +316,19 @@ namespace PokemonGen3Hack.Components.ViewModel {
         info.SetNickname(p.Nickname);
         info.SetOTName(p.OT);
         info.SetMarkings(p.Marking1, p.Marking2, p.Marking3, p.Marking4);
+        Dictionary<string, byte> ivs = PokemonModelStatsToIVs(p.Stats);
         // 2. 새 PID 생성 (DataStructure 업데이트 전에 필수!)
-        info.RegeneratePID(p.Nature, p.Gender, p.IsShiny);
+        if (NeedsNewPID()) {
+          bool isLegal = info.RegeneratePID(p.Nature, p.Gender, p.IsShiny, ivs, allowIllegalPKHeX);
+          if (!isLegal && !allowIllegalPKHeX) {
+            return ["현재 성격/성별/색이 다른 여부/IV 조합으로는 Gen 3 Method 1 PID를 찾지 못했습니다."];
+          }
+        }
         // 3. DataStructure 필드 업데이트
         info.Data.SetExperience((uint)p.Experience);
         info.Data.SetFriendship((byte)p.Friendship);
         info.Data.SetItemHeld(p.HeldItem);
-        info.Data.SetIVs(PokemonModelStatsToIVs(p.Stats));
+        info.Data.SetIVs(ivs, info.Personality.Ability);
         info.Data.SetEVs(PokemonModelStatsToEVs(p.Stats));
         ushort[] moves = [.. p.Moves.Select(m => (ushort)m.Number)];
         info.Data.SetMoves(moves);
@@ -396,6 +456,8 @@ namespace PokemonGen3Hack.Components.ViewModel {
         }
         Pokemon.IsObedience = slot.Data.IsObedience;
         Pokemon.SelectedRibbons = [.. slot.Data.Ribbons.Select((r, i) => r > 0 ? (Ribbon)i : Ribbon.None).Where(r => r != Ribbon.None)];
+      } else {
+        UpdatePokemonLanguage(Pokemon);
       }
     }
 

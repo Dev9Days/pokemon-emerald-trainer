@@ -46,6 +46,7 @@ if (Test-Path $packageRoot) {
 New-Item -ItemType Directory -Path $appRoot -Force | Out-Null
 Copy-Item -Path (Join-Path $appPublish "*") -Destination $appRoot -Recurse -Force
 Copy-Item -Path (Join-Path $launcherPublish "PokemonGen3Hack.exe") -Destination (Join-Path $packageRoot "PokemonGen3Hack.exe") -Force
+Set-Content -Path (Join-Path $packageRoot "version.txt") -Value $Version -NoNewline
 
 if (Test-Path $zipPath) {
     Remove-Item -LiteralPath $zipPath -Force

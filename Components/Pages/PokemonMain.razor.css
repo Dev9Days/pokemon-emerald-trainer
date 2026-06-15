@@ -417,6 +417,42 @@ label:has(input[type="checkbox"].hidden).check.shiny {
   font-weight: 500;
 }
 
+.legality-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: "Fira Code", "DM Sans", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1.5px solid;
+}
+
+.legality-status.ok {
+  color: var(--primary-dark);
+  background: linear-gradient(135deg, var(--sage-100), var(--sage-50));
+  border-color: var(--sage-300);
+}
+
+.legality-status.warn {
+  color: #8a4b00;
+  background: #fff5dc;
+  border-color: #e0aa43;
+}
+
+.legality-label {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.65);
+  color: inherit;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+}
+
 /* ============================================
    Stats Table
    ============================================ */

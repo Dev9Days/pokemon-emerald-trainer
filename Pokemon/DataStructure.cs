@@ -388,14 +388,18 @@ namespace PokemonGen3Hack.Pokemon {
       if (evs.TryGetValue("SpecialAttack", out byte spa)) E.SpecialAttack = spa;
       if (evs.TryGetValue("SpecialDefense", out byte spd)) E.SpecialDefense = spd;
     }
-    public void SetIVs(Dictionary<string, byte> ivs) {
+    public void SetIVs(Dictionary<string, byte> ivs, byte? ability = null) {
+      uint flags = M.IVs & 0x40000000;
+      if ((ability ?? (byte)((M.IVs >> 31) & 1)) != 0) {
+        flags |= 0x80000000;
+      }
       byte hp = ivs.TryGetValue("HP", out byte hpVal) ? hpVal : (byte)0;
       byte attack = ivs.TryGetValue("Attack", out byte atkVal) ? atkVal : (byte)0;
       byte defense = ivs.TryGetValue("Defense", out byte defVal) ? defVal : (byte)0;
       byte speed = ivs.TryGetValue("Speed", out byte speedVal) ? speedVal : (byte)0;
       byte spa = ivs.TryGetValue("SpecialAttack", out byte spaVal) ? spaVal : (byte)0;
       byte spd = ivs.TryGetValue("SpecialDefense", out byte spdVal) ? spdVal : (byte)0;
-      uint ivsValue = (uint)(
+      uint ivsValue = flags | (uint)(
         (hp & 0x1F) |
         ((attack & 0x1F) << 5) |
         ((defense & 0x1F) << 10) |

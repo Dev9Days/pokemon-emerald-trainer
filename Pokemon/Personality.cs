@@ -2,6 +2,9 @@
 namespace PokemonGen3Hack.Pokemon {
   public class Personality {
     private static readonly Random rnd = new();
+    private const uint GbaRngMultiplier = 0x41C64E6D;
+    private const uint GbaRngIncrement = 0x6073;
+    private const uint GbaRngInverse = 0xEEB9EB65;
     private Gender gender;
     private GenderGroup genderGroup;
     private byte ability;
@@ -116,11 +119,7 @@ namespace PokemonGen3Hack.Pokemon {
     }
 
     private bool IsValidPID(ushort cand, ushort upper, Gender? desiredGender) {
-      // Nature 검사: 바이트 순서를 뒤집어서 계산
-      uint pidForNature = ((uint)(upper >> 8) << 24) |
-                          ((uint)(upper & 0xFF) << 16) |
-                          ((uint)(cand >> 8) << 8) |
-                          (uint)(cand & 0xFF);
+      uint pidForNature = ((uint)upper << 16) | cand;
       if (pidForNature % 25 != (uint)nature) return false;
       if ((cand & 1) != ability) return false;
 
@@ -153,7 +152,7 @@ namespace PokemonGen3Hack.Pokemon {
     public Personality SetShiny() {
       if (isShiny) return this;
       byte[] pidBytes = GeneratePID(null);
-      ushort upper = (ushort)((pidBytes[2] << 8) | pidBytes[3]);
+      ushort upper = (ushort)(pidBytes[2] | (pidBytes[3] << 8));
       ushort xorBase = (ushort)(tid ^ sid ^ upper);
       ushort shinyOffset = (ushort)(Random.Shared.Next(0, 8));
       ushort newLower = (ushort)(shinyOffset ^ xorBase);
@@ -175,6 +174,87 @@ namespace PokemonGen3Hack.Pokemon {
       pid = GeneratePID(targetGender, targetShiny);
       return this;
     }
+    public bool CanGenerateMethod1PID(Nature targetNature, Gender targetGender, bool targetShiny, Dictionary<string, byte> targetIVs) {
+      Nature originalNature = nature;
+      Gender originalGender = gender;
+      bool originalIsShiny = isShiny;
+
+      nature = targetNature;
+      gender = targetGender;
+      isShiny = targetShiny;
+      bool canGenerate = TryGenerateMethod1PID(targetIVs, targetGender, targetShiny, out _);
+
+      nature = originalNature;
+      gender = originalGender;
+      isShiny = originalIsShiny;
+      return canGenerate;
+    }
+    public bool TryUpdatePersonality(Nature targetNature, Gender targetGender, bool targetShiny, Dictionary<string, byte> targetIVs, bool allowIllegalFallback) {
+      Nature originalNature = nature;
+      Gender originalGender = gender;
+      bool originalIsShiny = isShiny;
+      byte[] originalPid = pid;
+
+      nature = targetNature;
+      gender = targetGender;
+      isShiny = targetShiny;
+
+      if (!TryGenerateMethod1PID(targetIVs, targetGender, targetShiny, out byte[] method1Pid)) {
+        if (allowIllegalFallback) {
+          pid = GeneratePID(targetGender, targetShiny);
+          return false;
+        }
+
+        nature = originalNature;
+        gender = originalGender;
+        isShiny = originalIsShiny;
+        pid = originalPid;
+        return false;
+      }
+
+      pid = method1Pid;
+      return true;
+    }
+    private bool TryGenerateMethod1PID(Dictionary<string, byte> targetIVs, Gender? desiredGender, bool targetShiny, out byte[] method1Pid) {
+      method1Pid = [];
+
+      ushort iv1 = PackIVWord(targetIVs, "HP", "Attack", "Defense");
+      ushort iv2 = PackIVWord(targetIVs, "Speed", "SpecialAttack", "SpecialDefense");
+
+      for (int iv1HighBit = 0; iv1HighBit <= 1; iv1HighBit++) {
+        ushort rngIv1 = (ushort)(iv1 | (iv1HighBit << 15));
+        for (int iv2HighBit = 0; iv2HighBit <= 1; iv2HighBit++) {
+          ushort rngIv2 = (ushort)(iv2 | (iv2HighBit << 15));
+
+          for (uint low = 0; low <= ushort.MaxValue; low++) {
+            uint state3 = ((uint)rngIv1 << 16) | low;
+            uint state4 = NextSeed(state3);
+            if ((ushort)(state4 >> 16) != rngIv2) continue;
+
+            uint state2 = PreviousSeed(state3);
+            uint state1 = PreviousSeed(state2);
+            ushort lower = (ushort)(state1 >> 16);
+            ushort upper = (ushort)(state2 >> 16);
+
+            if (targetShiny != IsValidShiny(lower, upper)) continue;
+            if (!IsValidPID(lower, upper, desiredGender)) continue;
+
+            method1Pid = BuildPIDBytes(lower, upper);
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+    private static ushort PackIVWord(Dictionary<string, byte> ivs, string first, string second, string third) {
+      byte iv1 = ivs.TryGetValue(first, out byte firstValue) ? firstValue : (byte)0;
+      byte iv2 = ivs.TryGetValue(second, out byte secondValue) ? secondValue : (byte)0;
+      byte iv3 = ivs.TryGetValue(third, out byte thirdValue) ? thirdValue : (byte)0;
+      return (ushort)((iv1 & 0x1F) | ((iv2 & 0x1F) << 5) | ((iv3 & 0x1F) << 10));
+    }
+    private static uint NextSeed(uint seed) => unchecked(seed * GbaRngMultiplier + GbaRngIncrement);
+    private static uint PreviousSeed(uint seed) => unchecked((seed - GbaRngIncrement) * GbaRngInverse);
     // FR, LG에서 사용한다고 함. 현재는 에메랄드만 다루기 때문에 미사용
     public static byte GetUnownForm3(uint pid) {
       var value = ((pid & 0x3000000) >> 18) | ((pid & 0x30000) >> 12) | ((pid & 0x300) >> 6) | (pid & 0x3);
