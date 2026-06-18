@@ -233,7 +233,10 @@ namespace PokemonGen3Hack.Components.ViewModel {
       Pokemon.SelectedRibbons = selectedRibbons?.ToList() ?? [];
     }
 
-    public async Task ReloadPokemonAsync() {
+    public async Task ReloadPokemonAsync(bool refreshConnection = false) {
+      if (refreshConnection) {
+        await RefreshEmulatorConnectionAsync();
+      }
       byte count = dex.GetPartyCount(false);
       if (SelectedPartyIndex >= count) {
         SelectedPartyIndex = 0;
@@ -259,6 +262,18 @@ namespace PokemonGen3Hack.Components.ViewModel {
       PartyCount = count;
       PokemonTemp = new PokemonModel[6];
       SelectPartyMember(SelectedPartyIndex);
+    }
+
+    private async Task RefreshEmulatorConnectionAsync() {
+      Process? process = emul.Process;
+      if (process == null) {
+        throw new InvalidOperationException("먼저 에뮬레이터 프로세스를 연결하세요.");
+      }
+      if (process.HasExited) {
+        throw new InvalidOperationException("연결된 에뮬레이터 프로세스가 종료되었습니다. 프로세스를 다시 선택하세요.");
+      }
+
+      await Task.Run(() => emul.SetProcess(process));
     }
     private string[] Validate() {
       List<string> errMsgs = [];

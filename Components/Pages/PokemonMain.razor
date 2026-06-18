@@ -283,7 +283,7 @@
   private async void ReloadPokemon() {
     toastService.ShowLoading("데이터를 다시 불러오는 중...");
     try {
-      await viewModel.ReloadPokemonAsync();
+      await viewModel.ReloadPokemonAsync(refreshConnection: true);
       toastService.ShowSuccess("포켓몬 데이터를 다시 불러왔습니다");
     } catch (Exception ex) {
       toastService.ShowError($"데이터를 가져오지 못했습니다: {ex.Message}", 0);
