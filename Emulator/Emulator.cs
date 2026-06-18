@@ -4,6 +4,9 @@ using System.Diagnostics;
 namespace PokemonGen3Hack.Emulator {
   public class Emulator : IEmulator {
     private readonly Memory scanner = Memory.Instance;
+    private const int RomTitleOffset = 0xA0;
+    private const int RomGameCodeOffset = 0xAC;
+    private const int RomLanguageMarkerOffset = 0x128;
 
     public Process? Process { get; set; }
     private nint processID;
@@ -59,14 +62,6 @@ namespace PokemonGen3Hack.Emulator {
       nint baseAddress = Process.MainModule.BaseAddress;
       ResetMemoryAddresses();
       bool resolved = TryResolveKnownPointers(p, baseAddress);
-      if (resolved) {
-        lang = GetLanguage();
-        if (lang == Language.Unknown) {
-          Logger.Warning("Known pointer resolved, but ROM language check failed. Falling back to AOB scan...");
-          ResetMemoryAddresses();
-          resolved = false;
-        }
-      }
       if (!resolved) {
         ResolveByAobScan(p);
       }
@@ -159,9 +154,32 @@ namespace PokemonGen3Hack.Emulator {
       Logger.Info("AOB Scan Complete.");
     }
     private Language GetLanguage() {
-      byte[] res = ReadPAK(0x128, 1);
-      Logger.Debug($"Lang(0x128): {res[0]:X}");
-      return IEmulator.GetLanguage(res[0]);
+      byte marker = ReadPAK(RomLanguageMarkerOffset, 1)[0];
+      Language markerLanguage = IEmulator.GetLanguage(marker);
+      string title = GetRomTitle();
+      string gameCode = GetRomGameCode();
+
+      Logger.Debug($"ROM title: {title}");
+      Logger.Debug($"ROM game code: {gameCode}");
+      Logger.Debug($"Lang(0x{RomLanguageMarkerOffset:X}): {marker:X2}");
+
+      if (markerLanguage != Language.Unknown) {
+        return markerLanguage;
+      }
+
+      Language headerLanguage = IEmulator.GetLanguageFromHeader(title, gameCode);
+      if (headerLanguage != Language.Unknown) {
+        Logger.Warning($"언어 마커를 찾지 못해 ROM 헤더로 언어를 판별했습니다. Marker=0x{marker:X2}, Title={title}, GameCode={gameCode}");
+      }
+
+      return headerLanguage;
+    }
+
+    private string GetRomTitle() => ReadAscii(RomTitleOffset, 12);
+    private string GetRomGameCode() => ReadAscii(RomGameCodeOffset, 4);
+    private string ReadAscii(int offset, int count) {
+      byte[] bytes = ReadPAK(offset, count);
+      return System.Text.Encoding.ASCII.GetString(bytes).TrimEnd('\0', ' ');
     }
     public byte[] ReadPAK(int offset = 0, int count = 0) => scanner.ReadMemory(ProcessID.ToInt32(), PAK + offset, count);
     public byte[] ReadEWRAM(int offset = 0, int count = 0) => scanner.ReadMemory(ProcessID.ToInt32(), EWRAM + offset, count);

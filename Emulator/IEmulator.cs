@@ -51,6 +51,20 @@ namespace PokemonGen3Hack.Emulator {
         _ => Language.Unknown,
       };
     }
+    internal static Language GetLanguageFromHeader(string title, string gameCode) {
+      string normalizedTitle = title.Trim().ToUpperInvariant();
+      string normalizedGameCode = gameCode.Trim().ToUpperInvariant();
+
+      if (normalizedGameCode.Length == 4 && normalizedGameCode[3] == 'E') {
+        return Language.English;
+      }
+
+      if (normalizedTitle.Contains("POKEMON EMER")) {
+        return Language.English;
+      }
+
+      return Language.Unknown;
+    }
     byte[] ReadPAK(int offset = 0, int count = 0);
     byte[] ReadEWRAM(int offset = 0, int count = 0);
     byte[] ReadIWRAM(int offset = 0, int count = 0);
