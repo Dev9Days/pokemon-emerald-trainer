@@ -167,12 +167,8 @@ namespace PokemonGen3Hack.Emulator {
         return markerLanguage;
       }
 
-      Language headerLanguage = IEmulator.GetLanguageFromHeader(title, gameCode);
-      if (headerLanguage != Language.Unknown) {
-        Logger.Warning($"언어 마커를 찾지 못해 ROM 헤더로 언어를 판별했습니다. Marker=0x{marker:X2}, Title={title}, GameCode={gameCode}");
-      }
-
-      return headerLanguage;
+      Logger.Warning($"ROM 언어 마커를 판별하지 못했습니다. Marker=0x{marker:X2}, Title={title}, GameCode={gameCode}");
+      return Language.Unknown;
     }
 
     private string GetRomTitle() => ReadAscii(RomTitleOffset, 12);
