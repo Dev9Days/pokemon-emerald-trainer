@@ -238,13 +238,11 @@ namespace PokemonGen3Hack.Components.ViewModel {
         await RefreshEmulatorConnectionAsync();
       }
       byte count = dex.GetPartyCount(false);
-      if (SelectedPartyIndex >= count) {
-        SelectedPartyIndex = 0;
-      }
-      PokemonInfo = new PokemonInfo[count];
+      int selectedIndex = SelectedPartyIndex >= count ? 0 : SelectedPartyIndex;
+      PokemonInfo[] nextPokemonInfo = new PokemonInfo[count];
       for (int i = 0; i < count; i++) {
-        PokemonInfo[i] = new(dex.GetPokemonData((byte)(i + 1)));
-        var slot = PokemonInfo[i];
+        nextPokemonInfo[i] = new(dex.GetPokemonData((byte)(i + 1)));
+        var slot = nextPokemonInfo[i];
         ushort pid = Hex.ToUShort(slot.Data.Species);
         byte[] speciesData = GetSpeciesOrDefault(pid);
         if (pid == 0) {
@@ -259,6 +257,8 @@ namespace PokemonGen3Hack.Components.ViewModel {
         slot.SetPersonality(genderGroup);
         // byte[] encrypted = slot.Data.GetEncryptData();
       }
+      SelectedPartyIndex = selectedIndex;
+      PokemonInfo = nextPokemonInfo;
       PartyCount = count;
       PokemonTemp = new PokemonModel[6];
       SelectPartyMember(SelectedPartyIndex);
