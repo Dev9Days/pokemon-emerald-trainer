@@ -12,6 +12,7 @@ namespace PokemonGen3Hack.Emulator {
   public enum Language {
     English,
     Korean,
+    Japan,
     Unknown
   }
   internal interface IEmulator {
@@ -47,7 +48,10 @@ namespace PokemonGen3Hack.Emulator {
     internal static Language GetLanguage(byte b) {
       return b switch {
         0x8C => Language.English,
-        0x34 => Language.Korean,
+        0x34 => Language.Korean, // 24 한글(모던)
+        0x3C => Language.Korean, // 24 한글
+        0x78 => Language.Korean, // 26 한글
+        0x1C => Language.Japan,
         _ => Language.Unknown,
       };
     }
