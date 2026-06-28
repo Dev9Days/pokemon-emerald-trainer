@@ -39,6 +39,10 @@ namespace PokemonGen3Hack.Services {
       });
     }
     public void ShowError(string message, int duration = 5000) {
+      var loadingToasts = _toasts.Where(t => t.Type == ToastType.Loading).ToList();
+      foreach (var toast in loadingToasts) {
+        _toasts.Remove(toast);
+      }
       AddToast(new ToastMessage {
         Message = message,
         Type = ToastType.Error,

@@ -287,7 +287,7 @@
       toastService.ShowSuccess("포켓몬 데이터를 다시 불러왔습니다");
     } catch (Exception ex) {
       Logger.Error(ex, "포켓몬 데이터 다시 불러오기 실패");
-      toastService.ShowError($"데이터를 가져오지 못했습니다: {ex.Message}", 0);
+      toastService.ShowError($"데이터를 가져오지 못했습니다: {ex.Message}");
     } finally {
       StateHasChanged();
     }
@@ -332,7 +332,7 @@
       NicknameLength = viewModel.IsEnglish ? 10 : 5;
       toastService.ShowSuccess($"{process.ProcessName} 프로세스에 연결했습니다", 2000);
     } catch (Exception ex) {
-      toastService.ShowError($"데이터를 가져오지 못했습니다: {ex.Message}", 0);
+      toastService.ShowError($"데이터를 가져오지 못했습니다: {ex.Message}");
     } finally {
       showLoading = false;
       StateHasChanged();
