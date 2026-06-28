@@ -48,6 +48,20 @@ Copy-Item -Path (Join-Path $appPublish "*") -Destination $appRoot -Recurse -Forc
 Copy-Item -Path (Join-Path $launcherPublish "PokemonGen3Hack.exe") -Destination (Join-Path $packageRoot "PokemonGen3Hack.exe") -Force
 Set-Content -Path (Join-Path $packageRoot "version.txt") -Value $Version -NoNewline
 
+$requiredFiles = @(
+    (Join-Path $packageRoot "PokemonGen3Hack.exe"),
+    (Join-Path $appRoot "PokemonGen3Hack.exe"),
+    (Join-Path $appRoot "PokemonGen3Hack.dll"),
+    (Join-Path $appRoot "wwwroot\index.html"),
+    (Join-Path $appRoot "wwwroot\_framework\blazor.webview.js")
+)
+
+foreach ($requiredFile in $requiredFiles) {
+    if (!(Test-Path $requiredFile)) {
+        throw "Package is incomplete. Missing required file: $requiredFile"
+    }
+}
+
 if (Test-Path $zipPath) {
     Remove-Item -LiteralPath $zipPath -Force
 }
