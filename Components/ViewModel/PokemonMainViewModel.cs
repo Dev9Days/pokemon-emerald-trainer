@@ -1,7 +1,6 @@
 using Force.DeepCloner;
 using PokemonGen3Hack.Emulator;
 using PokemonGen3Hack.Pokemon;
-using PokemonGen3Hack.Services;
 using PokemonGen3Hack.Utils;
 using System.Diagnostics;
 
@@ -177,15 +176,15 @@ namespace PokemonGen3Hack.Components.ViewModel {
         !SameStats(ivs, info.Data.IVs);
     }
 
-    public bool IsPKHeXMethod1Compatible() {
+    public PidAssessment? GetPendingPIDAssessment() {
       if (PokemonInfo.Length == 0 || SelectedPartyIndex < 0 || SelectedPartyIndex >= PokemonInfo.Length) {
-        return true;
+        return null;
       }
 
-      if (!NeedsNewPID()) return true;
+      if (!NeedsNewPID()) return null;
 
       var info = PokemonInfo[SelectedPartyIndex];
-      return info.CanGenerateMethod1PID(Pokemon.Nature, Pokemon.Gender, Pokemon.IsShiny, PokemonModelStatsToIVs(Pokemon.Stats));
+      return info.AssessPID(Pokemon.Nature, Pokemon.Gender, Pokemon.IsShiny, PokemonModelStatsToIVs(Pokemon.Stats));
     }
 
     private byte CalculatePokerusValue(bool isPokerus, int daysLeft) {
@@ -245,16 +244,16 @@ namespace PokemonGen3Hack.Components.ViewModel {
         var slot = nextPokemonInfo[i];
         ushort pid = Hex.ToUShort(slot.Data.Species);
         byte[] speciesData = GetSpeciesOrDefault(pid);
+        GenderGroup genderGroup = (GenderGroup)speciesData[16];
+        slot.SetPersonality(genderGroup);
         if (pid == 0) {
           slot.Image = string.Empty;
         } else try {
-          slot.Image = await PokemonDex.GetPocketmonImage(pid >= Const.PokemonImage.Length ? (ushort)(Const.PokemonImage.Length - 1) : pid);
+          slot.Image = dex.GetPocketmonImage(pid, Hex.ToUInt(slot.Personality.PID), slot.Data.IVs["Egg"] != 0);
         } catch (Exception ex) {
           Logger.Warning($"포켓몬 이미지 로딩 실패: Species={pid}, {ex.Message}");
           slot.Image = string.Empty;
         }
-        GenderGroup genderGroup = (GenderGroup)speciesData[16];
-        slot.SetPersonality(genderGroup);
         // byte[] encrypted = slot.Data.GetEncryptData();
       }
       SelectedPartyIndex = selectedIndex;
@@ -321,29 +320,30 @@ namespace PokemonGen3Hack.Components.ViewModel {
       return [.. errMsgs];
     }
 
-    public string[] ApplyChanges(bool allowIllegalPKHeX = false) {
+    public string[] ApplyChanges(bool allowUncorrelatedPid = false) {
       string[] errMsgs = Validate();
       if (errMsgs.Length > 0) return errMsgs;
-      var info = PokemonInfo[SelectedPartyIndex];
+      var info = PokemonInfo[SelectedPartyIndex].DeepClone();
       var p = Pokemon;
       try {
-        // 1. 기본 속성 업데이트
-        info.SetNickname(p.Nickname);
-        info.SetOTName(p.OT);
-        info.SetMarkings(p.Marking1, p.Marking2, p.Marking3, p.Marking4);
         Dictionary<string, byte> ivs = PokemonModelStatsToIVs(p.Stats);
-        // 2. 새 PID 생성 (DataStructure 업데이트 전에 필수!)
+        // Resolve PID before changing fields; failed searches must not modify the original.
         if (NeedsNewPID()) {
-          bool isLegal = info.RegeneratePID(p.Nature, p.Gender, p.IsShiny, ivs, allowIllegalPKHeX);
-          if (!isLegal && !allowIllegalPKHeX) {
-            return ["현재 성격/성별/색이 다른 여부/IV 조합으로는 Gen 3 Method 1 PID를 찾지 못했습니다."];
+          if (!info.RegeneratePID(p.Nature, p.Gender, p.IsShiny, ivs, allowUncorrelatedPid)) {
+            return ["조건에 맞는 PID를 만들지 못했습니다. 종족의 성별 제한과 입력값을 확인하세요."];
           }
         }
-        // 3. DataStructure 필드 업데이트
+        if (p.Nickname != info.Nickname) info.SetNickname(p.Nickname);
+        if (p.OT != info.OTName) info.SetOTName(p.OT);
+        byte markings = (byte)((p.Marking1 ? 1 : 0) | (p.Marking2 ? 2 : 0)
+          | (p.Marking3 ? 4 : 0) | (p.Marking4 ? 8 : 0));
+        if (markings != (info.Markings & 15)) {
+          info.SetMarkings(p.Marking1, p.Marking2, p.Marking3, p.Marking4);
+        }
         info.Data.SetExperience((uint)p.Experience);
         info.Data.SetFriendship((byte)p.Friendship);
         info.Data.SetItemHeld(p.HeldItem);
-        info.Data.SetIVs(ivs, info.Personality.Ability);
+        if (!SameStats(ivs, info.Data.IVs)) info.Data.SetIVs(ivs);
         info.Data.SetEVs(PokemonModelStatsToEVs(p.Stats));
         ushort[] moves = [.. p.Moves.Select(m => (ushort)m.Number)];
         info.Data.SetMoves(moves);
@@ -351,24 +351,21 @@ namespace PokemonGen3Hack.Components.ViewModel {
         info.Data.SetPPs(pps);
         byte[] ppBonuses = [.. p.Moves.Select(m => (byte)m.PPBonus)];
         info.Data.SetPPBonuses(ppBonuses);
-        byte pokerusValue = CalculatePokerusValue(p.IsPokerus, p.PokerusDaysLeft);
-        info.Data.SetPokerus(pokerusValue);
-        info.Data.SetRibbons(p.SelectedRibbons);
+        int originalPokerusDays = info.Data.IsPokerus ? info.Data.Pokerus & 15 : 0;
+        if (p.IsPokerus != info.Data.IsPokerus || p.PokerusDaysLeft != originalPokerusDays) {
+          info.Data.SetPokerus(CalculatePokerusValue(p.IsPokerus, p.PokerusDaysLeft));
+        }
+        Ribbon[] originalRibbons = [.. info.Data.Ribbons.Select((r, i) => r > 0 ? (Ribbon)i : Ribbon.None)
+          .Where(r => r != Ribbon.None)];
+        if (!originalRibbons.ToHashSet().SetEquals(p.SelectedRibbons)) info.Data.SetRibbons(p.SelectedRibbons);
         info.Data.SetObedience(p.IsObedience);
-        // 4. Status 업데이트 (새 인스턴스 생성)
-        Status newStatus = Status.CreateStatus(
-          p.Status,
-          (byte)p.Level,
-          info.Status.Mail,
-          (ushort)p.Stats[0].RealStat,
-          (ushort)p.Stats[0].RealStat,
-          (ushort)p.Stats[1].RealStat,
-          (ushort)p.Stats[2].RealStat,
-          (ushort)p.Stats[3].RealStat,
-          (ushort)p.Stats[4].RealStat,
-          (ushort)p.Stats[5].RealStat
-        );
-        info.SetStatus(newStatus);
+        byte[] statusBytes = info.Status.Getbytes();
+        if (p.Status != info.Status.StatusCond) statusBytes[0] = (byte)p.Status;
+        statusBytes[4] = (byte)p.Level;
+        for (int i = 0; i < 6; i++) {
+          Array.Copy(Hex.GetBytes((ushort)p.Stats[i].RealStat), 0, statusBytes, 8 + i * 2, 2);
+        }
+        info.SetStatus(new Status(statusBytes));
         // 5. 100바이트로 직렬화
         byte[] pokemonData = info.GetPokemonData();
         // 6. 에뮬레이터 메모리에 쓰기
@@ -377,6 +374,8 @@ namespace PokemonGen3Hack.Components.ViewModel {
         if (!writeSuccess) {
           return ["에뮬레이터가 실행 중인지 확인하세요."];
         }
+        PokemonInfo[SelectedPartyIndex] = info;
+        p.PID = Hex.ToUInt(info.Personality.PID).ToString("X8");
         // 7. 임시 저장 초기화
         PokemonTemp[SelectedPartyIndex] = null;
         Logger.Info($"[{p.Nickname}] 변경 완료");

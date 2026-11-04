@@ -1,6 +1,7 @@
 ﻿using PokemonGen3Hack.Utils;
 namespace PokemonGen3Hack.Pokemon {
   public class Status {
+    private byte[] rawData = new byte[20];
     private StatusCondition statusCondition;
     private byte level;
     private byte mail;
@@ -24,6 +25,7 @@ namespace PokemonGen3Hack.Pokemon {
     public Status(byte[] bytes) => SetStatus(bytes);
     public void SetStatus(byte[] bytes) {
       if (bytes.Length != 20) throw new ArgumentException("bytes length must be 20");
+      rawData = [.. bytes];
       statusCondition = bytes[0] >= 1 && bytes[0] <= 7 ? StatusCondition.Sleep : (StatusCondition)bytes[0];
       level = bytes[4];
       mail = bytes[5];
@@ -63,19 +65,7 @@ namespace PokemonGen3Hack.Pokemon {
       statusBytes[19] = spdBytes2[1];
       return new Status(statusBytes);
     }
-    public byte[] Getbytes() => [
-      (byte)statusCondition,
-      0, 0, 0,
-      level,
-      mail,
-      .. Hex.GetBytes(currentHP),
-      .. Hex.GetBytes(maxHP),
-      .. Hex.GetBytes(attack),
-      .. Hex.GetBytes(defense),
-      .. Hex.GetBytes(speed),
-      .. Hex.GetBytes(specialAttack),
-      .. Hex.GetBytes(specialDefense),
-    ];
+    public byte[] Getbytes() => [.. rawData];
     public override string ToString() {
       return $"StatusCondition: {statusCondition}, Level: {level}, Mail: {mail}, CurrentHP: {currentHP}, MaxHP: {maxHP}, Attack: {attack}, Defense: {defense}, Speed: {speed}, SpecialAttack: {specialAttack}, SpecialDefense: {specialDefense}";
     }

@@ -1,261 +1,235 @@
 @page "/"
 @page "/pokemon-main"
 @inject ToastService toastService
-@inject IJSRuntime jsRuntime
 
-<div class="container">
-  <!-- 파티 포켓몬 헤더 -->
-  <div class="party-header">
-    @for (int i = 0; i < 6; i++) {
-      int index = i;
-      <div class="party-slot @(i == viewModel.SelectedPartyIndex ? "active" : "")"
-        @onclick="() => viewModel.SelectPartyMember(index)">
-        @if (index < viewModel.PartyCount && index < viewModel.PokemonInfo.Length) {
-          @if (!string.IsNullOrEmpty(viewModel.PokemonInfo[index]?.Image)) {
-            <img src="@viewModel.PokemonInfo[index]?.Image" alt="Pokemon @(index + 1)" />
+<div class="trainer-shell">
+  <aside class="party-rail" aria-label="파티 포켓몬">
+    <div class="party-list">
+      @for (int i = 0; i < 6; i++) {
+        int index = i;
+        bool occupied = index < viewModel.PartyCount && index < viewModel.PokemonInfo.Length;
+        var member = occupied ? viewModel.PokemonInfo[index] : null;
+        <button type="button" class="party-slot @(occupied && index == viewModel.SelectedPartyIndex ? "active" : "")"
+                disabled="@(!occupied)" aria-pressed="@(occupied && index == viewModel.SelectedPartyIndex)"
+                aria-label="@(occupied ? $"{index + 1}: {member!.Nickname}" : $"{index + 1}: Empty")"
+                title="@(occupied ? member!.Nickname : "Empty")"
+                @onclick="() => viewModel.SelectPartyMember(index)">
+          @if (!string.IsNullOrEmpty(member?.Image)) {
+            <img src="@member.Image" alt="" width="64" height="64" />
           } else {
-            <span class="placeholder">No Image</span>
+            <span class="slot-placeholder">@(occupied ? "No Image" : "Empty")</span>
           }
-        } else {
-          <span class="placeholder">Empty</span>
-        }
-      </div>
-    }
-  </div>
-
-  <!-- 상단: 레벨, 성별, Nature, 닉네임, Shiny -->
-  <div class="card">
-    <div class="form-row">
-      <label>Lv:</label>
-      <input type="number" @bind="viewModel.Pokemon.Level" @bind:event="oninput" min="1" max="100" />
-      <label>Experience:</label>
-      <input type="number" @bind="viewModel.Pokemon.Experience" @bind:event="oninput" min="0" max="16777216" />
-    </div>
-    <div class="form-row">
-      <label>Nickname:</label>
-      <input type="text" @bind="viewModel.Pokemon.Nickname" @bind:event="oninput" maxlength="@NicknameLength" />
-      <label>Gender:</label>
-      <select @bind="viewModel.Pokemon.Gender">
-        @if (viewModel.Pokemon.Gender == Gender.Unknown) {
-          <option value="@Gender.Unknown">Unknown</option>
-        } else {
-          @foreach (var s in viewModel.GenderOptions) {
-            @if (s.Key != Gender.Unknown) {
-              <option value="@s.Key">@s.Value</option>
-            }
-          }
-        }
-      </select>
-    </div>
-    <div class="form-row">
-      <label>Nature:</label>
-      <select @bind="viewModel.Pokemon.Nature">
-        @foreach (var n in viewModel.NatureOptions) {
-          <option value="@n.Key">@n.Value</option>
-        }
-      </select>
-      <label>Type:</label>
-      <span class="type-badge type-@viewModel.Pokemon.Type1.ToLower()">@viewModel.Pokemon.Type1Text</span>
-      @if (viewModel.Pokemon.Type2 != string.Empty) {
-        <span class="type-badge type-@viewModel.Pokemon.Type2.ToLower()">@viewModel.Pokemon.Type2Text</span>
-      }
-      <label>Shiny:</label>
-      <label class="shiny @(viewModel.Pokemon.IsShiny ? "check" : "")">
-        <input type="checkbox" class="hidden" @bind="viewModel.Pokemon.IsShiny" />
-        <span>✨︎</span>
-      </label>
-    </div>
-    <div class="info-text">
-      OT: @viewModel.Pokemon.OT (@viewModel.Pokemon.TID/@viewModel.Pokemon.SID)
-      <span style="padding: 0 5px;" />
-      Language: @viewModel.Pokemon.Language
-      <span style="padding: 0 5px;" />
-      PID: @viewModel.Pokemon.PID
-    </div>
-    @{
-      bool isPKHeXCompatible = viewModel.IsPKHeXMethod1Compatible();
-    }
-    <div class="legality-status @(isPKHeXCompatible ? "ok" : "warn")">
-      <span class="legality-label">PKHeX</span>
-      @if (isPKHeXCompatible) {
-        <span>정상 데이터로 인식될 가능성이 높습니다.</span>
-      } else {
-        <span>비정상 데이터로 표시될 수 있습니다.</span>
+        </button>
       }
     </div>
-  </div>
+  </aside>
 
-  <!-- 능력치 패널 -->
-  <div class="card">
-    <table class="stats-table">
-      <thead>
-        <tr>
-          <th>Stat</th>
-          <th>Base</th>
-          <th>IV</th>
-          <th>EV</th>
-          <th>Real</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (int i = 0; i < viewModel.Pokemon.Stats.Count; i++) {
-          int index = i;
-          <tr>
-            <td>@viewModel.Pokemon.Stats[index].Name</td>
-            <td>@viewModel.Pokemon.Stats[index].Base</td>
-            <td><input type="number" @bind="viewModel.Pokemon.Stats[index].IV" @bind:event="oninput" min="0" max="31" /></td>
-            <td><input type="number" @bind="viewModel.Pokemon.Stats[index].EV" @bind:event="oninput" min="0" max="255" /></td>
-            <td><input type="number" @bind="viewModel.Pokemon.Stats[index].RealStat" @bind:event="oninput" min="1" max="999" /></td>
-          </tr>
-        }
-        <tr class="sum-row">
-          <td><b>Sum</b></td>
-          <td>@viewModel.Pokemon.SumBase</td>
-          <td>@(viewModel.Pokemon.SumIV)/186</td>
-          <td>@(viewModel.Pokemon.SumEV)/510</td>
-          <td>@viewModel.Pokemon.SumStat</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="form-row" style="margin-top: 10px;">
-      <label>HiddenPower:</label>
-      <span class="type-badge type-@viewModel.Pokemon.HiddenPowerTypeEN.ToLower()">@viewModel.Pokemon.HiddenPowerTypeText</span>
-      <span class="plain-text">Power: @viewModel.Pokemon.HiddenPowerValue</span>
-    </div>
-  </div>
-
-  <!-- 기술 편집 -->
-  <div class="card">
-    @for (int i = 0; i < 4; i++) {
-      int index = i;
-      <div class="form-row">
-        <label>Move @(@index + 1):</label>
-        <select @bind="viewModel.Pokemon.Moves[index].Number">
-          @foreach (var m in viewModel.MoveOptions) {
-            <option value="@m.Key">@m.Value</option>
-          }
-        </select>
-        <label>PP:</label>
-        <input type="number" @bind="viewModel.Pokemon.Moves[index].PP" @bind:event="oninput" min="0" max="64" />
-        <label>(+ Bonus)</label>
-        <select @bind="viewModel.Pokemon.Moves[index].PPBonus">
-          <option value="0">0</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-        </select>
-      </div>
-    }
-  </div>
-
-  <!-- 상태 / 컨디션 -->
-  <div class="card">
-    <div class="form-row">
-      <label>Status:</label>
-      <select @bind="viewModel.Pokemon.Status">
-        @foreach (var s in viewModel.StatusOptions) {
-          <option value="@s.Key">@s.Value</option>
-        }
-      </select>
-      <label for="obedience">Obedience:</label>
-      <input id="obedience" type="checkbox" @bind="viewModel.Pokemon.IsObedience" />
-    </div>
-    <div class="form-row">
-      <label>Held Item:</label>
-      <select @bind="viewModel.Pokemon.HeldItem">
-        @foreach (var i in viewModel.ItemOptions) {
-          <option value="@i.Key">@i.Value</option>
-        }
-      </select>
-      <label>Friendship:</label>
-      <input type="number" @bind="viewModel.Pokemon.Friendship" @bind:event="oninput" min="0" max="255" />
-    </div>
-    <div class="form-row">
-      <label for="pokerus">Pokérus:</label>
-      <input id="pokerus" type="checkbox" @bind="viewModel.Pokemon.IsPokerus" />
-      <label for="pokerus">Infected</label>
-      @if (viewModel.Pokemon.IsPokerus) {
-        <span class="value-display">
-          Infected (
-          <span style="display: inline-flex;">
-            <select @bind="viewModel.Pokemon.PokerusDaysLeft">
-              <option value="4">4</option>
-              <option value="3">3</option>
-              <option value="2">2</option>
-              <option value="1">1</option>
-              <option value="0">0(Cured)</option>
+  <main class="editor-main">
+    <fieldset class="editor-fields" disabled="@(!viewModel.IsAttached)">
+      <section class="identity-section" aria-label="포켓몬 기본 정보">
+        <div class="identity-grid">
+          <label class="field nickname-field">
+            <span>Nickname:</span>
+            <input type="text" @bind="viewModel.Pokemon.Nickname" @bind:event="oninput" maxlength="@(NicknameLength > 0 ? NicknameLength : 10)" />
+          </label>
+          <label class="field">
+            <span>Lv:</span>
+            <input type="number" @bind="viewModel.Pokemon.Level" @bind:event="oninput" min="1" max="100" />
+          </label>
+          <label class="field">
+            <span>Experience:</span>
+            <input type="number" @bind="viewModel.Pokemon.Experience" @bind:event="oninput" min="0" max="16777216" />
+          </label>
+          <label class="field">
+            <span>Gender:</span>
+            <select @bind="viewModel.Pokemon.Gender">
+              @if (viewModel.Pokemon.Gender == Gender.Unknown) {
+                <option value="@Gender.Unknown">Unknown</option>
+              } else {
+                @foreach (var s in viewModel.GenderOptions) {
+                  @if (s.Key != Gender.Unknown) {
+                    <option value="@s.Key">@s.Value</option>
+                  }
+                }
+              }
             </select>
-          </span>
-          days left)
+          </label>
+          <label class="field">
+            <span>Nature:</span>
+            <select @bind="viewModel.Pokemon.Nature">
+              @foreach (var n in viewModel.NatureOptions) {
+                <option value="@n.Key">@n.Value</option>
+              }
+            </select>
+          </label>
+          <div class="type-shiny-field">
+            <div class="field type-field">
+              <span>Type:</span>
+              <div class="type-list">
+                @if (!string.IsNullOrEmpty(viewModel.Pokemon.Type1Text)) {
+                  <span class="type-badge type-@viewModel.Pokemon.Type1.ToLower()">@viewModel.Pokemon.Type1Text</span>
+                }
+                @if (viewModel.Pokemon.Type2 != string.Empty) {
+                  <span class="type-badge type-@viewModel.Pokemon.Type2.ToLower()">@viewModel.Pokemon.Type2Text</span>
+                }
+              </div>
+            </div>
+            <label class="shiny-toggle" title="Shiny">
+              <span>Shiny:</span>
+              <input type="checkbox" aria-label="Shiny" @bind="viewModel.Pokemon.IsShiny" />
+              <span class="shiny-icon" aria-hidden="true">✨︎</span>
+            </label>
+          </div>
+        </div>
+
+        @{
+          var pidAssessment = viewModel.GetPendingPIDAssessment();
+          string pidDetail = pidAssessment == null
+            ? "PID 변경 없음. PKHeX 전체 적법성은 미검증입니다."
+            : $"{pidAssessment.Origin}. PKHeX 전체 적법성은 미검증입니다.";
+        }
+        <div class="identity-meta">
+          <span>OT: @viewModel.Pokemon.OT (@viewModel.Pokemon.TID/@viewModel.Pokemon.SID)</span>
+          <span>Language: @viewModel.Pokemon.Language</span>
+          <span>PID: @viewModel.Pokemon.PID</span>
+          <div class="legality-status @(pidAssessment == null || pidAssessment.Status == PidMatchStatus.Match ? "ok" : "warn")" role="status" title="@pidDetail">
+            <span>PID/IV:</span>
+            @if (pidAssessment == null) {
+              <span>변경 없음</span>
+            } else if (pidAssessment.Status == PidMatchStatus.Match) {
+              <span>@pidAssessment.Method 후보 있음</span>
+            } else if (pidAssessment.Status == PidMatchStatus.Unsupported) {
+              <span>획득 규칙 미확인</span>
+            } else {
+              <span>조건에 맞는 후보 없음</span>
+            }
+          </div>
+        </div>
+      </section>
+
+      <div class="editor-columns">
+        <section class="stats-section" aria-label="능력치">
+          <table class="stats-table">
+            <thead><tr><th>Stat</th><th>Base</th><th>IV</th><th>EV</th><th>Real</th></tr></thead>
+            <tbody>
+              @for (int i = 0; i < viewModel.Pokemon.Stats.Count; i++) {
+                int index = i;
+                <tr>
+                  <th scope="row">@CompactStatName(viewModel.Pokemon.Stats[index].Name)</th>
+                  <td>@viewModel.Pokemon.Stats[index].Base</td>
+                  <td><input type="number" aria-label="@(viewModel.Pokemon.Stats[index].Name + " IV")" @bind="viewModel.Pokemon.Stats[index].IV" @bind:event="oninput" min="0" max="31" /></td>
+                  <td><input type="number" aria-label="@(viewModel.Pokemon.Stats[index].Name + " EV")" @bind="viewModel.Pokemon.Stats[index].EV" @bind:event="oninput" min="0" max="255" /></td>
+                  <td><input type="number" aria-label="@(viewModel.Pokemon.Stats[index].Name + " Real")" @bind="viewModel.Pokemon.Stats[index].RealStat" @bind:event="oninput" min="1" max="999" /></td>
+                </tr>
+              }
+              <tr class="sum-row">
+                <th scope="row">Sum</th><td>@viewModel.Pokemon.SumBase</td>
+                <td>@(viewModel.Pokemon.SumIV)/186</td><td>@(viewModel.Pokemon.SumEV)/510</td><td>@viewModel.Pokemon.SumStat</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="hidden-power">
+            <span>HiddenPower:</span>
+            <span class="type-badge type-@viewModel.Pokemon.HiddenPowerTypeEN.ToLower()">@viewModel.Pokemon.HiddenPowerTypeText</span>
+            <span class="numeric">Power @viewModel.Pokemon.HiddenPowerValue</span>
+          </div>
+        </section>
+
+        <div class="moves-condition-column">
+          <section class="moves-section" aria-label="기술">
+            <div class="move-grid move-headings" aria-hidden="true"><span></span><span>Move</span><span>PP</span><span>PP Up</span></div>
+            @for (int i = 0; i < 4; i++) {
+              int index = i;
+              <div class="move-grid">
+                <span class="move-number">@(index + 1)</span>
+                <select aria-label="Move @(index + 1)" @bind="viewModel.Pokemon.Moves[index].Number">
+                  @foreach (var m in viewModel.MoveOptions) { <option value="@m.Key">@m.Value</option> }
+                </select>
+                <input type="number" aria-label="Move @(index + 1) PP" @bind="viewModel.Pokemon.Moves[index].PP" @bind:event="oninput" min="0" max="64" />
+                <select aria-label="Move @(index + 1) PP Up" @bind="viewModel.Pokemon.Moves[index].PPBonus">
+                  <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                </select>
+              </div>
+            }
+          </section>
+
+          <section class="condition-section" aria-label="컨디션">
+            <div class="condition-grid">
+              <label class="field"><span>Status:</span>
+                <select @bind="viewModel.Pokemon.Status">
+                  @foreach (var s in viewModel.StatusOptions) { <option value="@s.Key">@s.Value</option> }
+                </select>
+              </label>
+              <label class="field item-field"><span>Held Item:</span>
+                <select @bind="viewModel.Pokemon.HeldItem">
+                  @foreach (var item in viewModel.ItemOptions) { <option value="@item.Key">@item.Value</option> }
+                </select>
+              </label>
+              <label class="field friendship-field"><span>Friendship:</span>
+                <input type="number" @bind="viewModel.Pokemon.Friendship" @bind:event="oninput" min="0" max="255" />
+              </label>
+            </div>
+            <div class="condition-toggles">
+              <label class="checkbox-label"><input type="checkbox" @bind="viewModel.Pokemon.IsObedience" /><span>Obedience(복종)</span></label>
+              <label class="checkbox-label"><input type="checkbox" @bind="viewModel.Pokemon.IsPokerus" /><span>Pokérus(포케러스)</span></label>
+              @if (viewModel.Pokemon.IsPokerus) {
+                <label class="pokerus-days"><span>잔여 일수</span>
+                  <select @bind="viewModel.Pokemon.PokerusDaysLeft">
+                    <option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option><option value="0">0 (Cured)</option>
+                  </select>
+                </label>
+              }
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="extras-row">
+        <div class="markings-group" aria-label="마킹">
+          <span>Markings:</span>
+          <label class="marking-toggle" title="원"><input type="checkbox" aria-label="원 마킹" @bind="viewModel.Pokemon.Marking1" /><span aria-hidden="true">●</span></label>
+          <label class="marking-toggle" title="네모"><input type="checkbox" aria-label="네모 마킹" @bind="viewModel.Pokemon.Marking2" /><span aria-hidden="true">■</span></label>
+          <label class="marking-toggle" title="세모"><input type="checkbox" aria-label="세모 마킹" @bind="viewModel.Pokemon.Marking3" /><span aria-hidden="true">▲</span></label>
+          <label class="marking-toggle" title="하트"><input type="checkbox" aria-label="하트 마킹" @bind="viewModel.Pokemon.Marking4" /><span aria-hidden="true">♥</span></label>
+        </div>
+        <section class="ribbons-section" aria-label="리본">
+          <span class="section-label">Ribbons:</span>
+          <div class="ribbons-group">
+            @foreach (var r in viewModel.RibbonOptions) {
+              @if (r.Key != Ribbon.None) {
+                <label class="ribbon-checkbox">
+                  <input type="checkbox" checked="@viewModel.Pokemon.SelectedRibbons.Contains(r.Key)"
+                         @onchange="@((e) => OnRibbonCheckChange(r.Key, e.Value is true))" />
+                  <span>@r.Value</span>
+                </label>
+              }
+            }
+          </div>
+        </section>
+      </div>
+    </fieldset>
+
+    <div class="encounter-info">
+      @if (viewModel.PartyCount > 0) {
+        <span>
+          @(viewModel.Pokemon.Nickname)은(는) @(viewModel.Pokemon.EncounterLocation)에서
+          @if (viewModel.Pokemon.EncounterLevel == 0) {
+            <text>Lv.5일 때 부화했습니다.</text>
+          } else {
+            <text>Lv.@(viewModel.Pokemon.EncounterLevel)일 때 @(viewModel.Pokemon.EncounterBall)로 만났습니다.</text>
+          }
         </span>
       }
     </div>
-  </div>
+    <footer class="button-group">
+      <button type="button" class="btn btn-secondary" disabled="@(!viewModel.IsAttached)" title="다시 불러오기" @onclick="ReloadPokemon"><span class="command-icon icon-refresh" aria-hidden="true"></span>다시 불러오기</button>
+      <button type="button" class="btn btn-secondary" disabled="@(!viewModel.IsAttached)" title="임시 저장" @onclick="TempSave"><span class="command-icon icon-save" aria-hidden="true"></span>임시 저장</button>
+      <button type="button" class="btn btn-primary" disabled="@(!viewModel.IsAttached)" title="변경 적용" @onclick="ApplyChanges"><span class="command-icon icon-check" aria-hidden="true"></span>변경 적용</button>
+      <button type="button" class="btn btn-accent" title="프로세스 잡기" @onclick="AttachProcess"><span class="command-icon icon-plug" aria-hidden="true"></span>프로세스 잡기</button>
+    </footer>
+  </main>
 
-  <!-- 마킹 / 리본 -->
-  <div class="card">
-    <div class="form-row">
-      <label>Markings:</label>
-      <div>
-        <label class="@(viewModel.Pokemon.Marking1 ? "check" : "")">
-          <input type="checkbox" class="hidden" @bind="viewModel.Pokemon.Marking1" />
-          <span>●</span>
-        </label>
-        <label class="@(viewModel.Pokemon.Marking2 ? "check" : "")">
-          <input type="checkbox" class="hidden" @bind="viewModel.Pokemon.Marking2" />
-          <span>■</span>
-        </label>
-        <label class="@(viewModel.Pokemon.Marking3 ? "check" : "")">
-          <input type="checkbox" class="hidden" @bind="viewModel.Pokemon.Marking3" />
-          <span>▲</span>
-        </label>
-        <label class="@(viewModel.Pokemon.Marking4 ? "check" : "")">
-          <input type="checkbox" class="hidden" @bind="viewModel.Pokemon.Marking4" />
-          <span>♥</span>
-        </label>
-      </div>
-    </div>
-    <div class="form-row">
-      <label>Ribbons:</label>
-      <div class="ribbons-group">
-        @foreach (var r in viewModel.RibbonOptions) {
-          @if (r.Key != Ribbon.None) {
-            // TODO: 쿨, 뷰티, 큐트, 지니어스, 파워풀 1~4까지 선택 가능하게 변경
-            <label class="ribbon-checkbox">
-              <input type="checkbox"
-                     checked="@viewModel.Pokemon.SelectedRibbons.Contains(r.Key)"
-                     @onchange="@((e) => OnRibbonCheckChange(r.Key, (bool)e.Value))" />
-              <span>@r.Value</span>
-            </label>
-          }
-        }
-      </div>
-    </div>
-  </div>
-
-  <!-- 읽기 전용 정보 -->
-  <div class="card info-card">
-    @(viewModel.Pokemon.Nickname)은(는) @(viewModel.Pokemon.EncounterLocation)에서
-    @if (viewModel.Pokemon.EncounterLevel == 0) {
-      <text>Lv.5일 때 부화했습니다.</text>
-    } else {
-      <text>
-        Lv.@(viewModel.Pokemon.EncounterLevel)일 때 @(viewModel.Pokemon.EncounterBall)로 만났습니다.
-      </text>
-    }
-  </div>
-
-  <!-- 하단 버튼 -->
-  <div class="button-group">
-    <button class="btn btn-secondary" @onclick="ReloadPokemon">다시 불러오기</button>
-    <button class="btn btn-secondary" @onclick="TempSave">임시 저장</button>
-    <button class="btn btn-primary" @onclick="ApplyChanges">변경 적용</button>
-    <button class="btn btn-accent" @onclick="AttachProcess">프로세스 잡기</button>
-  </div>
-
-  <ProcessSelector IsVisible="@viewModel.ShowProcessModal"
-    IsVisibleChanged="@((value) => viewModel.ShowProcessModal = value)" OnProcessSelected="@HandleProcessSelected" />
-
+  <ProcessSelector IsVisible="@viewModel.ShowProcessModal" IsVisibleChanged="@((value) => viewModel.ShowProcessModal = value)" OnProcessSelected="@HandleProcessSelected" />
   <LoadingOverlay IsVisible="@showLoading" Message="에뮬레이터에 연결 중..." />
   <ToastContainer />
 </div>
@@ -264,6 +238,12 @@
   private bool showLoading = false;
   private ViewModel.PokemonMainViewModel viewModel = new ViewModel.PokemonMainViewModel();
   private int NicknameLength = 0;
+
+  private static string CompactStatName(string name) => name switch {
+    "SpecialAttack" => "Sp. Atk",
+    "SpecialDefense" => "Sp. Def",
+    _ => name,
+  };
 
   public PokemonMain() {
     // Logger.Debug(Hex.BytesToString(CharDecoder.Decode("POUND")));
@@ -293,17 +273,8 @@
     }
   }
 
-  private async Task ApplyChanges() {
-    bool allowIllegalPKHeX = false;
-    if (!viewModel.IsPKHeXMethod1Compatible()) {
-      allowIllegalPKHeX = await jsRuntime.InvokeAsync<bool>(
-        "confirm",
-        "현재 성격/성별/Shiny/IV 조합은 PKHeX에서 비정상 데이터로 표시될 수 있습니다. 그래도 저장할까요?"
-      );
-      if (!allowIllegalPKHeX) return;
-    }
-
-    string[] msgs = viewModel.ApplyChanges(allowIllegalPKHeX);
+  private void ApplyChanges() {
+    string[] msgs = viewModel.ApplyChanges(allowUncorrelatedPid: true);
     toastService.DismissAll();
     if (msgs.Length > 0) {
       foreach (string msg in msgs) {

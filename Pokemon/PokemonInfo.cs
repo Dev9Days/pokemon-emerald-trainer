@@ -59,7 +59,7 @@ namespace PokemonGen3Hack.Pokemon {
       ..otname,
       markings,
       ..data.CalcChecksum(),
-      0, 0,
+      orgData[30], orgData[31],
       ..data.GetEncryptData(),
       ..status.Getbytes(),
     ];
@@ -93,11 +93,22 @@ namespace PokemonGen3Hack.Pokemon {
     public void SetStatus(Status newStatus) => status = newStatus;
     public bool CanGenerateMethod1PID(Nature nature, Gender gender, bool isShiny, Dictionary<string, byte> targetIVs)
       => personality.CanGenerateMethod1PID(nature, gender, isShiny, targetIVs);
-    public bool RegeneratePID(Nature nature, Gender gender, bool isShiny, Dictionary<string, byte> targetIVs, bool allowIllegalFallback) {
-      bool isLegal = personality.TryUpdatePersonality(nature, gender, isShiny, targetIVs, allowIllegalFallback);
+    public PidAssessment AssessPID(Nature nature, Gender gender, bool isShiny, Dictionary<string, byte> targetIVs)
+      => EncounterPidSearch.Find(this, nature, gender, isShiny, targetIVs);
+    public bool RegeneratePID(Nature nature, Gender gender, bool isShiny, Dictionary<string, byte> targetIVs, bool allowUncorrelatedPid = false) {
+      if (!Personality.HasValidIVs(targetIVs)) return false;
+      var result = AssessPID(nature, gender, isShiny, targetIVs);
+      if (result.CandidatePid is uint matchedPid) {
+        personality.SetPersonality(Hex.GetBytes(matchedPid), GenderGroup, tid, sid);
+      } else {
+        uint form = Personality.GetUnownForm3(Hex.ToUInt(personality.PID));
+        if (!allowUncorrelatedPid || !personality.TryGenerateUncorrelatedPID(nature, gender, isShiny, out byte[] fallbackPid,
+            candidate => pid != 201 || Personality.GetUnownForm3(candidate) == form)) return false;
+        personality.SetPersonality(fallbackPid, GenderGroup, tid, sid);
+      }
       Data.UpdateKey(personality.PID, tid, sid);
       Data.ChangeSubOrder(personality.GetBytes());
-      return isLegal;
+      return true;
     }
   }
 }

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="UiPreview" />
+    <PackageReference Include="DeepCloner" Version="0.10.4" />
+    <PackageReference Include="PKHeX.Core" Version="26.10.18" />
+    <Compile Include="../../Pokemon/*.cs" Link="Pokemon/%(Filename)%(Extension)" />
+    <Compile Include="../../Emulator/*.cs" Link="Emulator/%(Filename)%(Extension)" />
+    <Compile Include="../../Utils/*.cs" Link="Utils/%(Filename)%(Extension)" />
+    <Compile Include="../../Components/ViewModel/PokemonMainViewModel.cs" Link="PokemonMainViewModel.cs" />
+  </ItemGroup>
+</Project>

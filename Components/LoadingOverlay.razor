@@ -1,9 +1,6 @@
 <div class="loading-overlay @(IsVisible ? "visible" : "")" role="status" aria-live="polite" aria-label="@Message">
   <div class="loading-content">
-    <div class="loading-spinner">
-      <div class="spinner-ring"></div>
-      <div class="spinner-inner"></div>
-    </div>
+    <div class="loading-spinner" aria-hidden="true"></div>
     <p class="loading-message">@Message</p>
   </div>
 </div>

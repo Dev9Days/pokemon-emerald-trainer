@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.0.2",
     [string]$RuntimeIdentifier = "win-x64"
 )
 
@@ -35,7 +35,6 @@ Invoke-Native dotnet publish (Join-Path $root "Launcher\PokemonGen3Hack.Launcher
     -r $RuntimeIdentifier `
     --self-contained false `
     -p:PublishSingleFile=true `
-    -p:EnableCompressionInSingleFile=true `
     -p:DebugType=None `
     -p:DebugSymbols=false
 

@@ -21,8 +21,9 @@ namespace PokemonGen3Hack.Emulator {
     public int BlockSize { get => blockSize; }
     private EmulatorType type;
     public EmulatorType Type { get => type; }
-    private Language lang;
+    private Language lang = Language.Unknown;
     public Language Lang { get => lang; }
+    internal RomProfile? Profile { get; private set; }
     private bool isWorking;
     public bool IsWorking { get => isWorking; }
 
@@ -31,6 +32,8 @@ namespace PokemonGen3Hack.Emulator {
     }
 
     public void SetProcess(Process p) {
+      lang = Language.Unknown;
+      Profile = null;
       if (p.MainModule == null) return;
       Process = p;
       processID = p.Id;
@@ -47,7 +50,12 @@ namespace PokemonGen3Hack.Emulator {
         if (lang == Language.Unknown) {
           throw new InvalidOperationException($"지원하지 않는 ROM 언어이거나 ROM 영역을 찾지 못했습니다. PAK=0x{PAK:X}, EWRAM=0x{EWRAM:X}, IWRAM=0x{IWRAM:X}");
         }
+        if (Profile == null) {
+          lang = Language.Unknown;
+          throw new InvalidOperationException("ROM 주소 프로필이 없는 버전입니다. 지원하는 ROM 리비전인지 확인해 주세요.");
+        }
         Logger.Info($"Found Lang: {Lang}");
+        Logger.Info($"Found ROM profile: {Profile.Name}");
       } finally {
         isWorking = false;
         sw.Stop();
@@ -155,6 +163,7 @@ namespace PokemonGen3Hack.Emulator {
     }
     private Language GetLanguage() {
       byte marker = ReadPAK(RomLanguageMarkerOffset, 1)[0];
+      Profile = RomProfile.FromMarker(marker);
       Language markerLanguage = IEmulator.GetLanguage(marker);
       string title = GetRomTitle();
       string gameCode = GetRomGameCode();

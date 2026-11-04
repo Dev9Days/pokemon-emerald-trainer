@@ -8,37 +8,25 @@ namespace PokemonGen3Hack {
     }
 
     protected override Window CreateWindow(IActivationState? activationState) {
+      const double defaultWidth = 1108;
+      const double defaultHeight = 695;
+      const string sizePreset = "1108x695";
+      bool restoreCompactLayout = Preferences.Get("CompactLayoutWindow", false);
+      bool restoreSize = Preferences.Get("WindowSizePreset", "") == sizePreset;
+      double width = restoreSize ? Preferences.Get("WindowWidth", defaultWidth) : defaultWidth;
+      double height = restoreSize ? Preferences.Get("WindowHeight", defaultHeight) : defaultHeight;
+      if (!double.IsFinite(width)) width = defaultWidth;
+      if (!double.IsFinite(height)) height = defaultHeight;
       var window = new Window(new MainPage()) {
         Title = "PokemonGen3Hack",
-        Width = 784.17,
-        Height = 988.67
+        Width = Math.Clamp(width, 320, 16384),
+        Height = Math.Clamp(height, 320, 16384),
       };
-      // 저장된 창 크기와 위치 복원
-      if (Preferences.ContainsKey("WindowWidth")) {
-        window.Width = Preferences.Get("WindowWidth", 784.17);
-      }
-      if (Preferences.ContainsKey("WindowHeight")) {
-        window.Height = Preferences.Get("WindowHeight", 988.67);
-      }
-      if (Preferences.ContainsKey("WindowX")) {
-        window.X = Preferences.Get("WindowX", 0.0);
-      }
-      if (Preferences.ContainsKey("WindowY")) {
-        window.Y = Preferences.Get("WindowY", 0.0);
-      }
-
-      // 창 크기/위치 변경 시 저장
-      window.SizeChanged += (s, e) => {
-        Preferences.Set("WindowWidth", window.Width);
-        Preferences.Set("WindowHeight", window.Height);
-      };
-
-      window.Destroying += (s, e) => {
-        Preferences.Set("WindowWidth", window.Width);
-        Preferences.Set("WindowHeight", window.Height);
-        Preferences.Set("WindowX", window.X);
-        Preferences.Set("WindowY", window.Y);
-      };
+      // Apply the new size once, then retain subsequent user resizing and the existing position.
+      Preferences.Set("WindowSizePreset", sizePreset);
+      Preferences.Set("CompactLayoutWindow", true);
+      // The native window must exist before its monitor, DPI and work area are known.
+      window.Created += (_, _) => new WinUI.WindowPlacementManager(window).Initialize(restoreCompactLayout);
 
       return window;
     }

@@ -68,49 +68,42 @@ namespace PokemonGen3Hack.Pokemon {
     //  }
     //}
     public byte[] GeneratePID(Gender? targetGender = null, bool? targetShiny = null) {
-      var rng = Random.Shared;
-      Gender? desiredGender = targetGender ?? gender;
-      bool needShiny = targetShiny ?? false;
-
-      if (needShiny) {
-        return GenerateShinyPID(rng, desiredGender);
-      } else {
-        return GenerateNonShinyPID(rng, desiredGender);
-      }
+      if (TryGenerateUncorrelatedPID(nature, targetGender ?? gender, targetShiny ?? false, out byte[] result)) return result;
+      throw new InvalidOperationException("No PID satisfies the requested nature, gender, shiny state and ability.");
     }
 
-    private byte[] GenerateShinyPID(Random rng, Gender? desiredGender) {
-      while (true) {
-        ushort upper = (ushort)rng.Next(0x0000, 0x10000);
-        ushort xorBase = (ushort)(tid ^ sid ^ upper);
-
-        for (int shinyOffset = 0; shinyOffset < 8; shinyOffset++) {
-          ushort lower = (ushort)(shinyOffset ^ xorBase);
-
-          for (int i = 0; i <= ushort.MaxValue; i++) {
-            ushort cand = (ushort)(lower + i * 8);
-
-            if (!IsValidShiny(cand, upper)) continue;
-            if (!IsValidPID(cand, upper, desiredGender)) continue;
-
-            return BuildPIDBytes(cand, upper);
+    internal bool TryGenerateUncorrelatedPID(Nature desiredNature, Gender desiredGender, bool targetShiny, out byte[] result, Func<uint, bool>? filter = null) {
+      result = [];
+      if ((uint)desiredNature >= 25) return false;
+      if (genderGroup is GenderGroup.Unknown or GenderGroup.Female or GenderGroup.Male) {
+        if (desiredGender != (Gender)genderGroup) return false;
+      } else if (desiredGender is not (Gender.Male or Gender.Female)) {
+        return false;
+      }
+      int firstUpper = Random.Shared.Next(0x10000);
+      for (int step = 0; step <= ushort.MaxValue; step++) {
+        ushort upper = (ushort)(firstUpper + step);
+        if (targetShiny) {
+          for (int shinyXor = 0; shinyXor < 8; shinyXor++) {
+            ushort lower = (ushort)(tid ^ sid ^ upper ^ shinyXor);
+            if (!IsValidPID(lower, upper, desiredGender, desiredNature)) continue;
+            if (filter != null && !filter(((uint)upper << 16) | lower)) continue;
+            result = BuildPIDBytes(lower, upper);
+            return true;
+          }
+        } else {
+          // Only visit lower halves that satisfy PID % 25 == nature.
+          int firstLower = ((int)desiredNature + 25 - (int)(((uint)upper << 16) % 25)) % 25;
+          for (int lower = firstLower; lower <= ushort.MaxValue; lower += 25) {
+            if (IsValidShiny((ushort)lower, upper)) continue;
+            if (!IsValidPID((ushort)lower, upper, desiredGender, desiredNature)) continue;
+            if (filter != null && !filter(((uint)upper << 16) | (uint)lower)) continue;
+            result = BuildPIDBytes((ushort)lower, upper);
+            return true;
           }
         }
       }
-    }
-
-    private byte[] GenerateNonShinyPID(Random rng, Gender? desiredGender) {
-      ushort upper = (ushort)rng.Next(0x0000, 0x10000);
-      ushort lower = (ushort)rng.Next(0x0000, 0x10000);
-
-      for (int i = 0; i <= ushort.MaxValue; i++) {
-        ushort cand = (ushort)(lower + i);
-
-        if (!IsValidPID(cand, upper, desiredGender)) continue;
-
-        return BuildPIDBytes(cand, upper);
-      }
-      throw new Exception("Valid PID not found (should not happen).");
+      return false;
     }
 
     private bool IsValidShiny(ushort cand, ushort upper) {
@@ -118,14 +111,14 @@ namespace PokemonGen3Hack.Pokemon {
       return xor < 8;
     }
 
-    private bool IsValidPID(ushort cand, ushort upper, Gender? desiredGender) {
+    private bool IsValidPID(ushort cand, ushort upper, Gender? desiredGender, Nature? desiredNature = null) {
       uint pidForNature = ((uint)upper << 16) | cand;
-      if (pidForNature % 25 != (uint)nature) return false;
+      if (pidForNature % 25 != (uint)(desiredNature ?? nature)) return false;
       if ((cand & 1) != ability) return false;
 
       // Gender 검사
       if (genderGroup is GenderGroup.Unknown or GenderGroup.Female or GenderGroup.Male) {
-        return true;
+        return desiredGender == null || desiredGender == (Gender)genderGroup;
       }
 
       Gender newGender = (cand & 0xFF) < (byte)genderGroup ? Gender.Female : Gender.Male;
@@ -175,48 +168,20 @@ namespace PokemonGen3Hack.Pokemon {
       return this;
     }
     public bool CanGenerateMethod1PID(Nature targetNature, Gender targetGender, bool targetShiny, Dictionary<string, byte> targetIVs) {
-      Nature originalNature = nature;
-      Gender originalGender = gender;
-      bool originalIsShiny = isShiny;
-
-      nature = targetNature;
-      gender = targetGender;
-      isShiny = targetShiny;
-      bool canGenerate = TryGenerateMethod1PID(targetIVs, targetGender, targetShiny, out _);
-
-      nature = originalNature;
-      gender = originalGender;
-      isShiny = originalIsShiny;
-      return canGenerate;
+      return TryGenerateMethod1PID(targetIVs, targetNature, targetGender, targetShiny, out _);
     }
-    public bool TryUpdatePersonality(Nature targetNature, Gender targetGender, bool targetShiny, Dictionary<string, byte> targetIVs, bool allowIllegalFallback) {
-      Nature originalNature = nature;
-      Gender originalGender = gender;
-      bool originalIsShiny = isShiny;
-      byte[] originalPid = pid;
-
-      nature = targetNature;
-      gender = targetGender;
-      isShiny = targetShiny;
-
-      if (!TryGenerateMethod1PID(targetIVs, targetGender, targetShiny, out byte[] method1Pid)) {
-        if (allowIllegalFallback) {
-          pid = GeneratePID(targetGender, targetShiny);
-          return false;
-        }
-
-        nature = originalNature;
-        gender = originalGender;
-        isShiny = originalIsShiny;
-        pid = originalPid;
-        return false;
+    public bool TryUpdatePersonality(Nature targetNature, Gender targetGender, bool targetShiny, Dictionary<string, byte> targetIVs, bool allowUncorrelatedPid = false) {
+      if (!HasValidIVs(targetIVs)) return false;
+      if (!TryGenerateMethod1PID(targetIVs, targetNature, targetGender, targetShiny, out byte[] method1Pid)) {
+        if (!allowUncorrelatedPid || !TryGenerateUncorrelatedPID(targetNature, targetGender, targetShiny, out method1Pid)) return false;
       }
-
-      pid = method1Pid;
+      SetPersonality(method1Pid, genderGroup, tid, sid);
       return true;
     }
-    private bool TryGenerateMethod1PID(Dictionary<string, byte> targetIVs, Gender? desiredGender, bool targetShiny, out byte[] method1Pid) {
+    private bool TryGenerateMethod1PID(Dictionary<string, byte> targetIVs, Nature desiredNature, Gender desiredGender, bool targetShiny, out byte[] method1Pid) {
       method1Pid = [];
+      if ((uint)desiredNature >= 25) return false;
+      if (!HasValidIVs(targetIVs)) return false;
 
       ushort iv1 = PackIVWord(targetIVs, "HP", "Attack", "Defense");
       ushort iv2 = PackIVWord(targetIVs, "Speed", "SpecialAttack", "SpecialDefense");
@@ -237,7 +202,7 @@ namespace PokemonGen3Hack.Pokemon {
             ushort upper = (ushort)(state2 >> 16);
 
             if (targetShiny != IsValidShiny(lower, upper)) continue;
-            if (!IsValidPID(lower, upper, desiredGender)) continue;
+            if (!IsValidPID(lower, upper, desiredGender, desiredNature)) continue;
 
             method1Pid = BuildPIDBytes(lower, upper);
             return true;
@@ -246,6 +211,10 @@ namespace PokemonGen3Hack.Pokemon {
       }
 
       return false;
+    }
+    internal static bool HasValidIVs(Dictionary<string, byte> ivs) {
+      string[] keys = ["HP", "Attack", "Defense", "Speed", "SpecialAttack", "SpecialDefense"];
+      return keys.All(key => ivs.TryGetValue(key, out byte value) && value <= 31);
     }
     private static ushort PackIVWord(Dictionary<string, byte> ivs, string first, string second, string third) {
       byte iv1 = ivs.TryGetValue(first, out byte firstValue) ? firstValue : (byte)0;

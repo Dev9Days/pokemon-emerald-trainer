@@ -3,43 +3,18 @@ using PokemonGen3Hack.Utils;
 
 namespace PokemonGen3Hack.Pokemon {
   internal class PokemonDex(Emulator.Emulator emul) {
-    private const string IMG_PATH = "https://archives.bulbagarden.net/media/upload/";
-    private readonly Dictionary<string, int> En = new() {
-      {"PARTY_COUNT", 0x244E9},
-      {"SLOT_1", 0x244EC},
-      {"SLOT_2", 0x24550},
-      {"SLOT_3", 0x245B4},
-      {"SLOT_4", 0x24618},
-      {"SLOT_5", 0x2467C},
-      {"SLOT_6", 0x246E0},
-      {"SPECIES", 0x3203E8},
-      {"ITEMS", 0x5839CC}, // 44 bytes
-      {"TMHM_DESC", 0x300698},
-    };
-    private readonly Dictionary<string, int> Ko = new() {
-      {"PARTY_COUNT", 0x24649},
-      {"SLOT_1", 0x2464C},
-      {"SLOT_2", 0x246B0},
-      {"SLOT_3", 0x24714},
-      {"SLOT_4", 0x24778},
-      {"SLOT_5", 0x247DC},
-      {"SLOT_6", 0x24840},
-      {"SPECIES", 0x3041DC},
-      {"ITEMS", 0x562E44}, // 48 bytes
-      {"TMHM_DESC", 0x300698},
-    };
     private const byte SLOT_COUNTS = 100;
     public const byte SPECIES_COUNTS = 28;
     private const short TOTAL_ITEMS_COUNTS = 376;
     private const byte TMHM_DESC_COUNTS = 12;
     private byte PartyCount = 0;
-    private byte ITEM_DATA_COUNTS { get => (byte)(emul.Lang is Language.English ? 44 : 48); }
-    public byte ITEM_NAME_COUNTS { get => (byte)(emul.Lang is Language.English ? 14 : 18); }
-    private Dictionary<string, int> OffsetList { get => emul.Lang is Language.English ? En : Ko; }
+    private RomProfile Profile => emul.Profile
+      ?? throw new InvalidOperationException("ROM address profile has not been resolved.");
+    private byte ITEM_DATA_COUNTS => Profile.ItemDataSize;
+    public byte ITEM_NAME_COUNTS => Profile.ItemNameSize;
     public byte GetPartyCount(bool useCache = true) {
       if (PartyCount == 0 || !useCache) {
-        OffsetList.TryGetValue("PARTY_COUNT", out int countOffset);
-        byte rawCount = emul.ReadEWRAM(countOffset, 1)[0];
+        byte rawCount = emul.ReadEWRAM(Profile.PartyCountOffset, 1)[0];
         if (rawCount > 6) {
           throw new InvalidOperationException($"Invalid party count: {rawCount}");
         }
@@ -57,7 +32,7 @@ namespace PokemonGen3Hack.Pokemon {
         throw new TimeoutException("에뮬레이터 메모리 작업 시간이 초과되었습니다.");
       }
       if (slotNumber <= GetPartyCount()) {
-        OffsetList.TryGetValue($"SLOT_{slotNumber}", out int slotOffset);
+        int slotOffset = Profile.GetSlotOffset(slotNumber);
         byte[] data = emul.ReadEWRAM(slotOffset, SLOT_COUNTS);
         if (data.Length != SLOT_COUNTS) {
           throw new InvalidOperationException($"Invalid pokemon slot data length: {data.Length}/{SLOT_COUNTS}");
@@ -66,9 +41,9 @@ namespace PokemonGen3Hack.Pokemon {
       }
       throw new ArgumentOutOfRangeException(nameof(slotNumber), $"Slot {slotNumber} is outside current party count {PartyCount}.");
     }
-    public byte[] GetSpecies(ushort pokemonId) => ReadTable("SPECIES", pokemonId, SPECIES_COUNTS);
-    public byte[] GetTMHMDescription(ushort id) => ReadTable("TMHM_DESC", id, TMHM_DESC_COUNTS);
-    public byte[] GetItemData(short itemNumber) => ReadTable("ITEMS", itemNumber, ITEM_DATA_COUNTS);
+    public byte[] GetSpecies(ushort pokemonId) => ReadTable(Profile.SpeciesOffset, pokemonId, SPECIES_COUNTS);
+    public byte[] GetTMHMDescription(ushort id) => ReadTable(Profile.TMHMDescriptionOffset, id, TMHM_DESC_COUNTS);
+    public byte[] GetItemData(short itemNumber) => ReadTable(Profile.ItemsOffset, itemNumber, ITEM_DATA_COUNTS);
     public byte[][] GetTMHMDescriptions() {
       // AOB Read 상태일 땐 속도가 느려서 Timeout 10s 설정
       byte wait = 100;
@@ -77,7 +52,7 @@ namespace PokemonGen3Hack.Pokemon {
         Logger.Warning("작업이 지연되고 있습니다.");
         throw new TimeoutException("에뮬레이터 메모리 작업 시간이 초과되었습니다.");
       }
-      OffsetList.TryGetValue("TMHM_DESC", out int offset);
+      int offset = Profile.TMHMDescriptionOffset;
       byte[] items = emul.ReadPAK(offset, TMHM_DESC_COUNTS * ITEM_DATA_COUNTS);
       byte[][] result = new byte[TOTAL_ITEMS_COUNTS][];
       for (int i = 0; i < TOTAL_ITEMS_COUNTS; i++) {
@@ -95,7 +70,7 @@ namespace PokemonGen3Hack.Pokemon {
         Logger.Warning("작업이 지연되고 있습니다.");
         throw new TimeoutException("에뮬레이터 메모리 작업 시간이 초과되었습니다.");
       }
-      OffsetList.TryGetValue("ITEMS", out int itemOffset);
+      int itemOffset = Profile.ItemsOffset;
       byte[] items = emul.ReadPAK(itemOffset, TOTAL_ITEMS_COUNTS * ITEM_DATA_COUNTS);
       byte[][] result = new byte[TOTAL_ITEMS_COUNTS][];
       for (int i = 0; i < TOTAL_ITEMS_COUNTS; i++) {
@@ -105,12 +80,9 @@ namespace PokemonGen3Hack.Pokemon {
       // 이름 필드 영어: 14바이트, 한글: 18바이트. 아이템 번호 영어[14] 한글[18]
       return result;
     }
-    private byte[] ReadTable(string key, int id, int itemSize) {
+    private byte[] ReadTable(int baseOffset, int id, int itemSize) {
       if (id < 1) {
         throw new ArgumentOutOfRangeException(nameof(id), $"Table id must be greater than 0: {id}");
-      }
-      if (!OffsetList.TryGetValue(key, out int baseOffset)) {
-        throw new KeyNotFoundException($"Offset not found: {key}");
       }
       return emul.ReadPAK(baseOffset + (id - 1) * itemSize, itemSize);
     }
@@ -126,12 +98,14 @@ namespace PokemonGen3Hack.Pokemon {
         return false;
       }
       if (slotNumber <= GetPartyCount()) {
-        OffsetList.TryGetValue($"SLOT_{slotNumber}", out int slotOffset);
+        int slotOffset = Profile.GetSlotOffset(slotNumber);
         return emul.WriteEWRAM(slotOffset, data);
       }
       return false;
     }
 
-    public static async Task<string> GetPocketmonImage(ushort id) => ImageUtils.GetImageBase64Url(await ImageUtils.LoadImageFromUrlAsync(IMG_PATH + Const.PokemonImage[id]));
+    public string GetPocketmonImage(ushort id, uint personality = 0, bool isEgg = false) =>
+      ImageUtils.GetImageBase64Url(RomPokemonIcon.ReadPng(emul.ReadPAK,
+        Profile.MonIconTableOffset, id, personality, isEgg));
   }
 }

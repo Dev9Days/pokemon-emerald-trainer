@@ -1,0 +1,23 @@
+PKHeX.Core 26.10.18
+Copyright: Kaphotics and the PKHeX contributors
+License: GPL-3.0-or-later
+Project: https://github.com/kwsch/PKHeX
+Source version: https://github.com/kwsch/PKHeX/tree/26.10.18
+Package: https://www.nuget.org/packages/PKHeX.Core/26.10.18
+License text: licenses/PKHeX-Core-LICENSE.txt
+
+PKHeX.Core is used for Generation 3 encounter data, RNG seed recovery,
+PID/IV correlation rules, and wild encounter slot/frame verification.
+It is distributed as an unmodified NuGet dependency. Only selected PID
+values are applied; generated Pokemon records are not copied over the
+user's data.
+
+This notice records the dependency's license. It does not replace the
+license terms or determine the license of the rest of this project.
+
+Lucide static icons 1.68.0
+License: ISC (including the MIT-licensed Feather-derived portions)
+Project: https://lucide.dev
+Source: https://www.npmjs.com/package/lucide-static/v/1.68.0
+License text: wwwroot/icons/LICENSE.txt
+The selected SVG icons are bundled locally and do not use a CDN at runtime.

@@ -5,34 +5,30 @@
   <div class="modal-content" @onclick:stopPropagation="true">
     <div class="modal-header">
       <h3>에뮬레이터 프로세스 선택</h3>
-      <button class="modal-close" @onclick="Close">&times;</button>
+      <button type="button" class="modal-close" aria-label="닫기" @onclick="Close">&times;</button>
     </div>
 
     <div class="modal-body">
       @if (processes == null || processes.Length == 0) {
         <div class="empty-state">
           <p>실행 중인 에뮬레이터가 없습니다.</p>
-          <p class="help-text">지원 에뮬레이터: VBA, VBA-M, mGBA, DeSmuME, melonDS, Citra</p>
         </div>
       } else {
         <div class="process-list">
           @foreach (var process in processes) {
-            <div class="process-item" @onclick="() => SelectProcess(process)">
-              <div class="process-icon">🎮</div>
-              <div class="process-info">
-                <div class="process-name">@process.ProcessName</div>
-                <div class="process-title">@process.MainWindowTitle</div>
-                <div class="process-id">PID: @process.Id.ToString("X").PadLeft(8, '0')</div>
-              </div>
-            </div>
+            <button type="button" class="process-item" title="@process.MainWindowTitle" @onclick="() => SelectProcess(process)">
+              <span class="process-name">@process.ProcessName</span>
+              <span class="process-title">@process.MainWindowTitle</span>
+              <span class="process-id">PID: @process.Id.ToString("X").PadLeft(8, '0')</span>
+            </button>
           }
         </div>
       }
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-secondary" @onclick="Refresh">새로고침</button>
-      <button class="btn btn-accent" @onclick="Close">취소</button>
+      <button type="button" class="btn btn-secondary" @onclick="Refresh"><span class="refresh-icon" aria-hidden="true"></span>새로고침</button>
+      <button type="button" class="btn btn-accent" @onclick="Close">취소</button>
     </div>
   </div>
 </div>

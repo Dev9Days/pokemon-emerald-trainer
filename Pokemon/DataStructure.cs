@@ -23,6 +23,7 @@ namespace PokemonGen3Hack.Pokemon {
         PPBonuse3 = (byte)((data[8] >> 4) & 0b11);
         PPBonuse4 = (byte)((data[8] >> 6) & 0b11);
         Friendship = data[9];
+        unused = [.. data.Skip(10).Take(2)];
       }
       public byte[] GetBytes() => [
         ..Hex.GetBytes(Species),

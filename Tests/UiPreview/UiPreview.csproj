@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>PokemonGen3Hack</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../PidTests/PidTests.csproj" />
+    <Compile Include="..\..\Services/ToastService.cs" Link="ToastService.cs" />
+    <RazorComponent Include="..\..\Components\_Imports.razor" Link="Components\_Imports.razor" />
+    <RazorComponent Include="..\..\Components\Layout\MainLayout.razor" Link="Components\Layout\MainLayout.razor" />
+    <RazorComponent Include="..\..\Components\Pages\PokemonMain.razor" Link="Components\Pages\PokemonMain.razor" />
+    <RazorComponent Include="..\..\Components\ProcessSelector.razor" Link="Components\ProcessSelector.razor" />
+    <RazorComponent Include="..\..\Components\LoadingOverlay.razor" Link="Components\LoadingOverlay.razor" />
+    <RazorComponent Include="..\..\Components\ToastContainer.razor" Link="Components\ToastContainer.razor" />
+    <RazorComponent Include="..\..\Components\ToastNotification.razor" Link="Components\ToastNotification.razor" />
+    <Content Include="..\..\Components\**/*.razor.css" Link="Components\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

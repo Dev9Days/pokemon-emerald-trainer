@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <Compile Remove="Launcher\**" />
+    <Compile Remove="Tests\**" />
     <None Remove="Launcher\**" />
     <Content Remove="Launcher\**" />
     <EmbeddedResource Remove="Launcher\**" />
@@ -67,6 +68,7 @@
 
   <ItemGroup>
     <PackageReference Include="DeepCloner" Version="0.10.4" />
+    <PackageReference Include="PKHeX.Core" Version="26.10.18" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
@@ -74,6 +76,8 @@
 
   <ItemGroup>
     <RazorComponent Include="Components\Pages\PokemonMain.razor" />
+    <Content Include="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="licenses\PKHeX-Core-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
