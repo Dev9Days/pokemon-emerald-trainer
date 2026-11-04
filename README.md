@@ -2,7 +2,7 @@
 
 Pokemon Emerald 3세대 기반 ROM의 실행 중 메모리를 읽고, 파티 포켓몬 데이터를 확인하거나 수정하는 Windows용 트레이너입니다.
 
-![Pokemon Emerald Trainer main screen](docs/screenshot-main.png)
+![Pokemon Emerald Trainer main screen](docs/screenshot-main-v1.0.2.png)
 
 ## 다운로드
 
