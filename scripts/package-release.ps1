@@ -12,7 +12,7 @@ $distRoot = Join-Path $root "dist"
 $packageRoot = Join-Path $distRoot $packageName
 $appRoot = Join-Path $packageRoot "app"
 $zipPath = Join-Path $distRoot "$packageName.zip"
-$appPublish = Join-Path $root "bin\Release\$framework\$RuntimeIdentifier\publish"
+$appPublish = Join-Path $root "bin\Release\$framework\$RuntimeIdentifier\publish-$Version"
 $launcherPublish = Join-Path $root "Launcher\bin\Release\$framework\$RuntimeIdentifier\publish"
 
 function Invoke-Native {
@@ -25,6 +25,7 @@ function Invoke-Native {
 Invoke-Native dotnet publish (Join-Path $root "PokemonGen3Hack.csproj") `
     -c Release `
     -f $framework `
+    -o $appPublish `
     -p:RuntimeIdentifierOverride=$RuntimeIdentifier `
     -p:WindowsPackageType=None `
     -p:SatelliteResourceLanguages=ko
