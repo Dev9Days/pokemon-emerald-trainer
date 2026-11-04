@@ -12,8 +12,9 @@ $distRoot = Join-Path $root "dist"
 $packageRoot = Join-Path $distRoot $packageName
 $appRoot = Join-Path $packageRoot "app"
 $zipPath = Join-Path $distRoot "$packageName.zip"
-$appPublish = Join-Path $root "bin\Release\$framework\$RuntimeIdentifier\publish-$Version"
-$launcherPublish = Join-Path $root "Launcher\bin\Release\$framework\$RuntimeIdentifier\publish"
+$stagingRoot = Join-Path $root ("bin\Release\package-staging\" + [Guid]::NewGuid().ToString("N"))
+$appPublish = Join-Path $stagingRoot "app"
+$launcherPublish = Join-Path $stagingRoot "launcher"
 
 function Invoke-Native {
     & $args[0] @($args | Select-Object -Skip 1)
@@ -34,10 +35,17 @@ Invoke-Native dotnet publish (Join-Path $root "Launcher\PokemonGen3Hack.Launcher
     -c Release `
     -f $framework `
     -r $RuntimeIdentifier `
+    -o $launcherPublish `
     --self-contained false `
     -p:PublishSingleFile=true `
     -p:DebugType=None `
     -p:DebugSymbols=false
+
+foreach ($excludedDirectory in @("Tests", "dist", "Launcher", "obj", ".git", ".agents", ".claude")) {
+    if (Test-Path -LiteralPath (Join-Path $appPublish $excludedDirectory)) {
+        throw "Publish output contains a development directory: $excludedDirectory"
+    }
+}
 
 if (Test-Path $packageRoot) {
     Remove-Item -LiteralPath $packageRoot -Recurse -Force

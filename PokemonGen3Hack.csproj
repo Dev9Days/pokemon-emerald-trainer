@@ -11,6 +11,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <Nullable>enable</Nullable>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Tests\**;dist\**;Launcher\**;.agents\**;.claude\**</DefaultItemExcludes>
 
     <!-- App Info -->
     <ApplicationTitle>PokemonGen3Hack</ApplicationTitle>
